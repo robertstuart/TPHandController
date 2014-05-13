@@ -165,10 +165,28 @@ void updateRow3() {
 
 
 void lcdLocalBattery() {
-      int a = analogRead(PIN_BATT);
-      float volt = ((float) a) * .009;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 a * 0.0092f;
-      printVolt(10, 1, volt);
-      printPct(16, 1, false, volt);
+  float volt = getLocalBattery();
+  if (volt < 7.0f) {
+    lowBattery();
+  }
+  a * 0.0092f;
+  printVolt(10, 1, volt);
+  printPct(16, 1, false, volt);
+}
+
+float getLocalBattery() {
+  int a = analogRead(PIN_BATT);
+  return ((float) a) * .009;    
+}
+
+void lowBattery() {
+  clearScreen();
+  cursor(0,0);
+  lcdSerial.print("--- Low Battery ----");
+  delay(100);
+  while(getLocalBattery < 7.0) {
+    delay(100);
+  }
 }
 
 void lcdTpBattery() {
@@ -181,22 +199,22 @@ void lcdTpBattery() {
 }
 
 void printVolt(int x, int y, float volt) {
-    cursor(x, y);
-    if (volt < 10.00) {
-      lcdSerial.print(" ");
-    }
-    lcdSerial.print(volt);
-    lcdSerial.print("V");
+  cursor(x, y);
+  if (volt < 10.00) {
+    lcdSerial.print(" ");
+  }
+  lcdSerial.print(volt);
+  lcdSerial.print("V");
 }
 
 void printPct(int x, int y, boolean src, float volt) {
   cursor(x, y);
   int pct = (int) getPct(src, volt);
   if (pct < 10) {
-      lcdSerial.print("  ");
+    lcdSerial.print("  ");
   }
   else if (pct < 100) {
-      lcdSerial.print(" ");
+    lcdSerial.print(" ");
   } 
   lcdSerial.print(pct);
   lcdSerial.print("%");
@@ -206,11 +224,15 @@ void printPct(int x, int y, boolean src, float volt) {
 void lcdValSet() {
 }
 
-float tpVolt[] = { 12.6f, 11.99f, 11.75f, 11.54f, 11.23f, 11.05f, 10.83f, 10.63f, 10.35f, 9.0f};
-float tpPct[] =  {100.0f, 83.0f,  71.0f,  60.0f,  34.0f,  20.0f,  07.0f,  05.0f,  03.0f,  0.0f};
-float localVolt[] = {  8.4f,  8.09f, 7.57f, 7.34f, 7.12f, 6.0f};
-float localPct[] =  {100.0f, 88.0f, 49.0f,  20.0f, 5.0f,  0.0f};
-	
+float tpVolt[] = { 
+  12.6f, 11.99f, 11.75f, 11.54f, 11.23f, 11.05f, 10.83f, 10.63f, 10.35f, 9.0f};
+float tpPct[] =  {
+  100.0f, 83.0f,  71.0f,  60.0f,  34.0f,  20.0f,  07.0f,  05.0f,  03.0f,  0.0f};
+float localVolt[] = {  
+  8.4f,  8.09f, 7.57f, 7.34f, 7.12f, 6.0f};
+float localPct[] =  {
+  100.0f, 88.0f, 49.0f,  20.0f, 5.0f,  0.0f};
+
 // Convert battery voltage to percent                  
 float getPct(boolean src, float batteryVolt) {
   float* volt;
@@ -220,33 +242,33 @@ float getPct(boolean src, float batteryVolt) {
     volt = tpVolt;
     pct = tpPct;
     voltSize = sizeof(tpVolt)/sizeof(float); 
- }
+  }
   else {
     volt = localVolt;
     pct = localPct;
     voltSize = sizeof(localVolt)/sizeof(float); 
   }
-  
-    if (volt[0] < batteryVolt) {
-	return 100.0f;
+
+  if (volt[0] < batteryVolt) {
+    return 100.0f;
+  }
+  if (volt[voltSize - 1] > batteryVolt) {
+    return 0.0f;
+  }
+  for (int i = 1; i < voltSize ; i++) {
+    if (volt[i] < batteryVolt) {
+      float rangeVolt = volt[i - 1] - volt[i];
+      float rangePct = pct[i - 1] - pct[i];
+      float voltPct = (batteryVolt - volt[i])/rangeVolt;
+      return pct[i] +(voltPct * rangePct);
     }
-    if (volt[voltSize - 1] > batteryVolt) {
-	return 0.0f;
-    }
-    for (int i = 1; i < voltSize ; i++) {
-      if (volt[i] < batteryVolt) {
-        float rangeVolt = volt[i - 1] - volt[i];
-        float rangePct = pct[i - 1] - pct[i];
-        float voltPct = (batteryVolt - volt[i])/rangeVolt;
-        return pct[i] +(voltPct * rangePct);
-      }
-    }
+  }
   return-99.0f;
 }
 
 /**************************** LCD commands ***********************/
 void cursor(int x, int y)  { // origin is 0,0
-int base;
+  int base;
   switch (y) {
   case 0:
     base = 0;
@@ -305,9 +327,11 @@ void lcdPrintStatusLine() {
       else {
         if (value < 10) {
           lcdSerial.print("   ");
-        } else if (value < 100) {
+        } 
+        else if (value < 100) {
           lcdSerial.print("  ");
-        } else {
+        } 
+        else {
           lcdSerial.print(" ");
         } 
         lcdSerial.print(value);
@@ -315,7 +339,6 @@ void lcdPrintStatusLine() {
     }
   }
 }
-
 
 void setSplash() {
   cursor(0,0);
@@ -325,3 +348,5 @@ void setSplash() {
   lcdSerial.write(124);
   lcdSerial.write(10);
 }
+
+

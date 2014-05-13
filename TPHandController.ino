@@ -194,7 +194,7 @@ void checkSwitches() {
       powerDown();
     }
     if (switchState(PIN_SW3R) == SW_CLICKED) {
-      cmdState = cmdState | CMD_STATE_PWR;
+      cmdState = cmdState & (~CMD_STATE_PWR);
     }
     break;
   }  // end switch(shiftState()
