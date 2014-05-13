@@ -109,14 +109,15 @@ void loop() {
     }
   }
   if (timeMilliseconds > lcdUpdateTrigger) {
-    lcdUpdate();
+    if ((tpState & TP_STATE_STREAMING) == 0) {
+      lcdUpdate();
+    }
     lcdUpdateTrigger = ULONG_MAX;      
   }
   checkJoystick();
   checkSwitches();
   ledBlink();
   checkConnected();
-row4Values[0] = tpState;
 }
 
 /*****************************************************

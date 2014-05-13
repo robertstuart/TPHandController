@@ -83,12 +83,12 @@ void sendFrame(byte cmdDataHeader[], int cmdDataHeaderLength, byte cmdData[], in
 
   transmitBufferLength = 3 + cmdDataHeaderLength + cmdDataLength;
   transmitBuffer[transmitBufferLength] = checkSum;
-  Serial.write(transmitBuffer, transmitBufferLength+1);
+  Serial.write(transmitBuffer, transmitBufferLength);
 }
 
-//void flushChecksum() {
-//  Serial.write(transmitBuffer[transmitBufferLength]);
-//}
+void flushChecksum() {
+  Serial.write(transmitBuffer[transmitBufferLength]);
+}
 
 void set1Byte(byte array[], int offset, int value) {
   value += 127;

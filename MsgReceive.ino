@@ -36,7 +36,8 @@ boolean readXBee() {
       if (b == 0x7E) {
         packetByteCount = 0;
         packetInProgress = PACKET_MSB;
-//        flushChecksum();
+        flushChecksum();
+        sendResponse();  // Start reply
       }
       break;
     case PACKET_MSB:
@@ -132,7 +133,6 @@ int doRx(int b) {
  * 
  ********************************************************************/
 void newPacket() {
-  sendResponse();  // Reply to the packet
   msgTime = timeMilliseconds;
 
   // Note: lastOffset is set to the offset AFTER the last value.
