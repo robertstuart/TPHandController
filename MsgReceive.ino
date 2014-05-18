@@ -36,7 +36,7 @@ boolean readXBee() {
       if (b == 0x7E) {
         packetByteCount = 0;
         packetInProgress = PACKET_MSB;
-        flushChecksum();
+//        flushChecksum();
         sendResponse();  // Start reply
       }
       break;
@@ -140,6 +140,9 @@ void newPacket() {
   tpValSet = packetByteArray[TP_SEND_VALSET_STATUS];
   tpMode = packetByteArray[TP_SEND_MODE_STATUS];
   tpState = packetByteArray[TP_SEND_STATE_STATUS];
+  int msgType = packetByteArray[TP_SEND_MSG_ACK];
+  int msgVal = packetByteArray[TP_SEND_MSG_ACKVAL];
+  ackMsg(msgType, msgVal);
 }
 
 int get2Byte(byte array[], int index) {
@@ -147,12 +150,12 @@ int get2Byte(byte array[], int index) {
   int b2 = array[index + 1] & 0xFF;
   return (b1 << 8) + b2;
 }	
-int get4Byte(byte array[], int index) {
-  long b1 = array[index];
-  long b2 = array[index + 1] & 0xFF;
-  long b3 = array[index + 2] & 0xFF;
-  long b4 = array[index + 3] & 0xFF;
-  return (b1 << 24) + (b2 << 16) + (b3 << 8) + b4;
-}
+//int get4Byte(byte array[], int index) {
+//  long b1 = array[index];
+//  long b2 = array[index + 1] & 0xFF;
+//  long b3 = array[index + 2] & 0xFF;
+//  long b4 = array[index + 3] & 0xFF;
+//  return (b1 << 24) + (b2 << 16) + (b3 << 8) + b4;
+//}
 
 

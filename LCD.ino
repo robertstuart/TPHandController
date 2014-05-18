@@ -169,7 +169,7 @@ void lcdLocalBattery() {
   if (volt < 7.0f) {
     lowBattery();
   }
-  a * 0.0092f;
+//  a * 0.0092f;
   printVolt(10, 1, volt);
   printPct(16, 1, false, volt);
 }
@@ -184,7 +184,7 @@ void lowBattery() {
   cursor(0,0);
   lcdSerial.print("--- Low Battery ----");
   delay(100);
-  while(getLocalBattery < 7.0) {
+  while(getLocalBattery() < 7.0) {
     delay(100);
   }
 }

@@ -7,7 +7,37 @@ byte sendArray[100];
 int transmitBufferLength = 0;
 int transmitBufferPtr = 0;
 unsigned long transmitNextWriteTime = 0UL;
+int tpMsgRcvType = 0;
+int tpMsgRcvVal = 0;
 
+/*********************************************************
+ *
+ * sendMsg()
+ *
+ *      Sends a message to TP.  If there has been to ack to the
+ *      previous message, it goes ahead and sends it anyway.
+ *
+ *********************************************************/
+void sendMsg(int rType, int rVal) {
+  tpMsgRcvType = rType;
+  tpMsgRcvVal = rVal;  
+}
+
+/*********************************************************
+ *
+ * ackMsg()
+ *
+ *      An acknowledge received from TP.  At the moment, this does
+ *      nothing more than set the send value to zero.  Later, we could
+ *      have a queue.
+ *
+ *********************************************************/
+void ackMsg(int tpMsgRcvType, int tpMsgRcvVal) {
+  if ((tpMsgRcvType == tpMsgRcvType) && (tpMsgRcvVal == tpMsgRcvVal)) {
+    tpMsgRcvType = TP_RCV_MSG_NULL;
+    tpMsgRcvVal = 0;
+  }
+}
 
 
 /*********************************************************
@@ -20,10 +50,10 @@ unsigned long transmitNextWriteTime = 0UL;
 void sendResponse() {
   set1Byte(sendArray, TP_RCV_X, x);
   set1Byte(sendArray, TP_RCV_Y, y);
-  sendArray[TP_RCV_CMD] = cmdState;
-  sendArray[TP_RCV_MODE] = MODE_TP4;
-  Serial.write(transmitBuffer[transmitBufferLength]); // Send out the existing packet
+  sendArray[TP_RCV_MSG_TYPE] = tpMsgRcvType;
+  set2Byte(sendArray, TP_RCV_MSG_VAL, tpMsgRcvVal);
   sendTXFrame(XBEE_TWOPOTATOE, sendArray, TP_RCV_MAX);
+flushChecksum();
 }
 
 
@@ -72,7 +102,6 @@ void sendFrame(byte cmdDataHeader[], int cmdDataHeaderLength, byte cmdData[], in
     sum += cmdData[i];
   }
   byte checkSum = 0xFF - sum;
-
   // Copy to a single buffer and start the first byte of the transmit.
   for (int i = 0; i < cmdDataHeaderLength; i++) {
     transmitBuffer[i + 3] = cmdDataHeader[i];
@@ -84,6 +113,8 @@ void sendFrame(byte cmdDataHeader[], int cmdDataHeaderLength, byte cmdData[], in
   transmitBufferLength = 3 + cmdDataHeaderLength + cmdDataLength;
   transmitBuffer[transmitBufferLength] = checkSum;
   Serial.write(transmitBuffer, transmitBufferLength);
+//row4Values[0] = checkSum;
+//row4Values[1] = transmitBufferLength;
 }
 
 void flushChecksum() {
@@ -101,16 +132,16 @@ void set1Byte(byte array[], int offset, int value) {
   array[offset] = (byte) value;		
 }
 void set2Byte(byte array[], int offset, int value) {
-  value += 32767;
-  if (value < 0) {
-    value = 0;
+  long v = ((long) value) + 32767;
+  if (v < 0) {
+    v = 0;
   } 
-  else if (value > 65535) {
-    value = 65535;
+  else if (v > 65535) {
+    v = 65535;
   }
-  array[offset + 1] = (byte) (value & 0xFF);
-  value = value >> 8;
-  array[offset] = (byte) value;
+  array[offset + 1] = (byte) (v & 0xFFL);
+  v = v >> 8;
+  array[offset] = (byte) v;
 }
 
 

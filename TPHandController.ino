@@ -33,7 +33,6 @@ const int PIN_BATT = A2;
 
 unsigned long tStart = 0;
 
-int cmdState = CMD_STATE_PWR;
 int x = 0;
 int y = 0;
 
@@ -138,10 +137,10 @@ void checkJoystick() {
  *               UNSHIFTED       CTRL           ALT       ALT_CTRL
  *-------
  * PIN_SW1L -  90deg Left        Run
- * PIN_SW1R -  90deg Right       Halt
+ * PIN_SW1R -  90deg Right       Halt           TP4
  *-------
  * PIN_SW2L -  stream         
- * PIN_SW2R -  non-stream          
+ * PIN_SW2R -  non-stream                       TP5
  *-------
  * PIN_SW3L -  running                                  Power down HC
  * PIN_SW3R -  idle                                     Power down TP
@@ -173,20 +172,26 @@ void checkSwitches() {
 
   case SW_CTRL:
     if (switchState(PIN_SW1L) == SW_CLICKED) {
-      cmdState = cmdState | CMD_STATE_RUN;
+      sendMsg(TP_RCV_MSG_RUN,1);
     }
     if (switchState(PIN_SW1R) == SW_CLICKED) {
-      cmdState = cmdState & (~CMD_STATE_RUN);
+      sendMsg(TP_RCV_MSG_RUN,0);
     }
     if (switchState(PIN_SW2L) == SW_CLICKED) {
-      cmdState = cmdState | CMD_STATE_STREAM;
+      sendMsg(TP_RCV_MSG_STREAM,1);
     }
     if (switchState(PIN_SW2R) == SW_CLICKED) {
-      cmdState = cmdState & (~CMD_STATE_STREAM);
+      sendMsg(TP_RCV_MSG_STREAM,0);
     }
     break;
 
   case SW_ALT:
+    if (switchState(PIN_SW1R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_MODE,MODE_TP4);
+    }
+    if (switchState(PIN_SW2R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_MODE,MODE_TP5);
+    }
     break;
 
   case SW_ALT_CTRL:
@@ -194,7 +199,7 @@ void checkSwitches() {
       powerDown();
     }
     if (switchState(PIN_SW3R) == SW_CLICKED) {
-      cmdState = cmdState & (~CMD_STATE_PWR);
+      sendMsg(TP_RCV_MSG_POWER,0);
     }
     break;
   }  // end switch(shiftState()
