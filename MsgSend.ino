@@ -4,7 +4,7 @@ byte transmitBuffer[120] = {
 byte tXframeDataHeader[] = {
   0x01, 0, 0, 0, 0x01}; // API id, Frame id, dest MSB, dest LSB, Options
 byte sendArray[100];
-int transmitBufferLength = 0;
+int transmitBufferLength = 1;  // So the flushChecksum() doesn't send 7E
 int transmitBufferPtr = 0;
 unsigned long transmitNextWriteTime = 0UL;
 int tpMsgRcvType = 0;
@@ -53,7 +53,6 @@ void sendResponse() {
   sendArray[TP_RCV_MSG_TYPE] = tpMsgRcvType;
   set2Byte(sendArray, TP_RCV_MSG_VAL, tpMsgRcvVal);
   sendTXFrame(XBEE_TWOPOTATOE, sendArray, TP_RCV_MAX);
-flushChecksum();
 }
 
 
@@ -113,8 +112,7 @@ void sendFrame(byte cmdDataHeader[], int cmdDataHeaderLength, byte cmdData[], in
   transmitBufferLength = 3 + cmdDataHeaderLength + cmdDataLength;
   transmitBuffer[transmitBufferLength] = checkSum;
   Serial.write(transmitBuffer, transmitBufferLength);
-//row4Values[0] = checkSum;
-//row4Values[1] = transmitBufferLength;
+//flushChecksum();
 }
 
 void flushChecksum() {

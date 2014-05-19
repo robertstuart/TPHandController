@@ -36,7 +36,7 @@ boolean readXBee() {
       if (b == 0x7E) {
         packetByteCount = 0;
         packetInProgress = PACKET_MSB;
-//        flushChecksum();
+        flushChecksum();
         sendResponse();  // Start reply
       }
       break;

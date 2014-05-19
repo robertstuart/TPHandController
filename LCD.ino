@@ -116,6 +116,9 @@ void updateRow2() {
       case MODE_TP4:
         lcdSerial.print("Mode: TP4 ");
         break;
+      case MODE_TP5:
+        lcdSerial.print("Mode: TP5 ");
+        break;
       case MODE_DRIVE:
         lcdSerial.print("MD: DRIVE ");
         break;
