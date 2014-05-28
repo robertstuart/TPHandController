@@ -6,25 +6,58 @@ boolean isConnectedDisp3 = false;
 
 // Initialize the LCD screen
 void lcdInit() {
-  lcdSerial.begin(9600);
   if (digitalRead(PIN_SW1L) == LOW) { // need to reset things?
-    // These may not be in correct order or timings.
-    lcdSerial.write(18); // Defaults to 9600
-    delay(100);
-    lcdSerial.write(18);  // Defaults to 9600
-    lcdSerial.write(124);
-    lcdSerial.write(3);  // Sets 20 characters wide
-    lcdSerial.write(124);
-    lcdSerial.write(5);  // Sets 4 lines tall
-    delay(600); // wait for display to boot up
-    setSplash();
-    delay(500);
+    lcdSerial.begin(19200);
+    delay(1200);
     lcdSerial.write(124);
     lcdSerial.write(128);  // Set backlight (128-157)
     delay(500);
     powerDown();  // Turn off power.
   }
+  if (digitalRead(PIN_SW1R) == LOW) { // need to reset things?
+    lcdSerial.begin(19200);
+    delay(1200);
+    lcdSerial.write(124);
+    lcdSerial.write(140);  // Set backlight (128-157)
+    delay(500);
+    powerDown();  // Turn off power.
+  }
+
+  if (digitalRead(PIN_SW2L) == LOW) { // need to reset things?
+    delay(100);
+    
+    // Resetting as in next 2 lines doesn't work -- too late?
+    //lcdSerial.begin(9600);  // Put chosen rate here.
+    //lcdSerial.write(18); // CTRL-R sets to 9600
+  
+    // May need to fiddle with next lines if baud rate has been lost.
+    // Be sure the processor is set to 3.3V 8MHz!
+    delay(1100);
+    lcdSerial.begin(19200);
+    //lcdSerial.write(124); 
+    //lcdSerial.write(15);   // 2400=11, 4800=12, 9600=13, 14400=14, 19200=15, 38400=16  
+    //delay(100);
+    //lcdSerial.begin(19200);
+    
+    
+    delay(1100);
+    //  Uncomment the following lines (only!) system settings are corrupt.
+    //lcdSerial.write(124);
+    //lcdSerial.write(3);  // Sets 20 characters wide
+    //lcdSerial.write(124);
+    //lcdSerial.write(5);  // Sets 4 lines tall
+    
+    //  Uncomment the following lines (only!) to change the splash.
+    //cursor(0,0);
+    //lcdSerial.print("     TwoPotatoe     ");
+    //cursor(0, 1);
+    //lcdSerial.print("   Hand Controller  ");
+    //lcdSerial.write(124);
+    //lcdSerial.write(10);
+
+  }
   delay(1200);  // Why do we need such a long delay?
+  lcdSerial.begin(19200);  // Put chosen rate here.
 }
 
 
@@ -345,7 +378,7 @@ void lcdPrintStatusLine() {
 
 void setSplash() {
   cursor(0,0);
-  lcdSerial.print("     TwoPotatoe     ");
+  lcdSerial.print("     TwoPotatoe2    ");
   cursor(0, 1);
   lcdSerial.print("   Hand Controller  ");
   lcdSerial.write(124);

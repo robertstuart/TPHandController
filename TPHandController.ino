@@ -98,7 +98,7 @@ void setup() {
 void loop() {
   timeMilliseconds = millis();
   if (readXBee()) { // true if we have just finished sending packet.
-    if ((tpState & TP_STATE_STREAMING) == 0) {
+    if ((tpState & TP_STATE_DATA) == 0) {
       lcdUpdateTrigger = timeMilliseconds + 5; // Wait until write is complete.
     }
   }
@@ -108,7 +108,7 @@ void loop() {
     }
   }
   if (timeMilliseconds > lcdUpdateTrigger) {
-    if ((tpState & TP_STATE_STREAMING) == 0) {
+    if ((tpState & TP_STATE_DATA) == 0) {
       lcdUpdate();
     }
     lcdUpdateTrigger = ULONG_MAX;      
@@ -157,12 +157,16 @@ void checkSwitches() {
   switch(shift) {
   case SW_UNSHIFTED:
     if (switchState(PIN_SW1L) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_RUN_READY,1); 
     }
     if (switchState(PIN_SW1R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_RUN_READY,0);
     }
     if (switchState(PIN_SW2L) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_ROUTE,1); // Start a route
     }
     if (switchState(PIN_SW2R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_ROUTE,0); // Abort a route
     }
     if (switchState(PIN_SW3L) == SW_CLICKED) {
     }
@@ -172,25 +176,33 @@ void checkSwitches() {
 
   case SW_CTRL:
     if (switchState(PIN_SW1L) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_RUN,1);
+      sendMsg(TP_RCV_MSG_DATA,1);
     }
     if (switchState(PIN_SW1R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_RUN,0);
+      sendMsg(TP_RCV_MSG_DATA,0);
     }
     if (switchState(PIN_SW2L) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_STREAM,1);
+      sendMsg(TP_RCV_MSG_DATA_RATE,0); // Low data rate (20/sec)
     }
     if (switchState(PIN_SW2R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_STREAM,0);
+      sendMsg(TP_RCV_MSG_DATA_RATE,1); // High data rate (100/sec)
     }
     break;
 
   case SW_ALT:
+    if (switchState(PIN_SW1L) == SW_CLICKED) {
+    }
     if (switchState(PIN_SW1R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_MODE,MODE_TP4);
+    }
+    if (switchState(PIN_SW2L) == SW_CLICKED) {
     }
     if (switchState(PIN_SW2R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_MODE,MODE_TP5);
+    }
+    if (switchState(PIN_SW3L) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_LIGHTS, 7); // All lights on
+    }
+    if (switchState(PIN_SW3R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_LIGHTS, 0); // All lights off
     }
     break;
 
