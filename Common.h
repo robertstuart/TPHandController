@@ -11,6 +11,9 @@ const int MODE_TP_SEQUENCE    = 5;  // sequences batch-loaded from controller
 const int MODE_MT_SEQUNCE     = 6;  // motor test
 const int MODE_IMU            = 7;
 const int MODE_TP5            = 8;
+const int MODE_TP6xx          = 9;
+const int MODE_TP7            = 10;
+const int BLOCK_DATA          = 100; 
 
 // Status bits in the tpState byte
 const int TP_STATE_RUN_READY       = 0B00000001;  // Ready.  Reflects the RUN command.
@@ -74,9 +77,9 @@ const int TP_RCV_MSG_Z_VAL =       7;  //
 const int TP_RCV_MSG_POWER =       8;  // 
 const int TP_RCV_MSG_HOME =        9;  // 
 const int TP_RCV_MSG_LIGHTS =     10;  // 1st 3 bits of val
-const int TP_RCV_MSG_DATA =       11;  // Stream data
-const int TP_RCV_MSG_DATA_RATE =  12;  // 0 = 20/sec, 1 = 100/sec
-const int TP_RCV_MSG_COLLECT =    13;  // 1 = on, 0 = off;
+//const int TP_RCV_MSG_DATA =       11;  // Stream data
+//const int TP_RCV_MSG_DATA_RATE =  12;  // 0 = 20/sec, 1 = 100/sec
+//const int TP_RCV_MSG_COLLECT =    13;  // 1 = on, 0 = off;
 const int TP_RCV_MSG_ROTATE =     14;    
 const int TP_RCV_MSG_START =      15;  // Run loaded sequence.
 const int TP_RCV_MSG_RESET =      16;  // 
@@ -85,6 +88,7 @@ const int TP_RCV_MSG_VALSET =     18;  //
 const int TP_RCV_MSG_RUN_READY =  19;  // Run/Idle
 const int TP_RCV_MSG_BLOCK  =     20;  //
 const int TP_RCV_MSG_ROUTE  =     21;  // 
+const int TP_RCV_MSG_DSTART =     22;  //
 
 // Block types.  Must be non-overlapping with TP_RCV_MSG_xxx
 const int TP_BLOCK_ZERO     =    100;  // Must be greater than this

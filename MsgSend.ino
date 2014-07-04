@@ -23,21 +23,21 @@ void sendMsg(int rType, int rVal) {
   tpMsgRcvVal = rVal;  
 }
 
-/*********************************************************
- *
- * ackMsg()
- *
- *      An acknowledge received from TP.  At the moment, this does
- *      nothing more than set the send value to zero.  Later, we could
- *      have a queue.
- *
- *********************************************************/
-void ackMsg(int tpMsgRcvType, int tpMsgRcvVal) {
-  if ((tpMsgRcvType == tpMsgRcvType) && (tpMsgRcvVal == tpMsgRcvVal)) {
-    tpMsgRcvType = TP_RCV_MSG_NULL;
-    tpMsgRcvVal = 0;
-  }
-}
+///*********************************************************
+// *
+// * ackMsg()
+// *
+// *      An acknowledge received from TP.  At the moment, this does
+// *      nothing more than set the send value to zero.  Later, we could
+// *      have a queue.
+// *
+// *********************************************************/
+//void ackMsg(int tpMsgRcvType, int tpMsgRcvVal) {
+//  if ((tpMsgRcvType == tpMsgRcvType) && (tpMsgRcvVal == tpMsgRcvVal)) {
+//    tpMsgRcvType = TP_RCV_MSG_NULL;
+//    tpMsgRcvVal = 0;
+//  }
+//}
 
 
 /*********************************************************
@@ -111,13 +111,13 @@ void sendFrame(byte cmdDataHeader[], int cmdDataHeaderLength, byte cmdData[], in
 
   transmitBufferLength = 3 + cmdDataHeaderLength + cmdDataLength;
   transmitBuffer[transmitBufferLength] = checkSum;
-  Serial.write(transmitBuffer, transmitBufferLength);
+  Serial.write(transmitBuffer, transmitBufferLength + 1);
 //flushChecksum();
 }
 
-void flushChecksum() {
-  Serial.write(transmitBuffer[transmitBufferLength]);
-}
+//void flushChecksum() {
+//  Serial.write(transmitBuffer[transmitBufferLength]);
+//}
 
 void set1Byte(byte array[], int offset, int value) {
   value += 127;

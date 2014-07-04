@@ -163,10 +163,9 @@ void checkSwitches() {
       sendMsg(TP_RCV_MSG_RUN_READY,0);
     }
     if (switchState(PIN_SW2L) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_ROUTE,1); // Start a route
+      sendMsg(TP_RCV_MSG_DSTART,toggle()); // Start data dump
     }
     if (switchState(PIN_SW2R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_ROUTE,0); // Abort a route
     }
     if (switchState(PIN_SW3L) == SW_CLICKED) {
     }
@@ -176,27 +175,16 @@ void checkSwitches() {
 
   case SW_CTRL:
     if (switchState(PIN_SW1L) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_DATA,1);
+//      sendMsg(TP_RCV_MSG_DATA,1);
     }
     if (switchState(PIN_SW1R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_DATA,0);
+//      sendMsg(TP_RCV_MSG_DATA,0);
     }
     if (switchState(PIN_SW2L) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_DATA_RATE,0); // Low data rate (20/sec)
+//      sendMsg(TP_RCV_MSG_DATA_RATE,0); // Low data rate (20/sec)
     }
     if (switchState(PIN_SW2R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_DATA_RATE,1); // High data rate (100/sec)
-    }
-    break;
-
-  case SW_ALT:
-    if (switchState(PIN_SW1L) == SW_CLICKED) {
-    }
-    if (switchState(PIN_SW1R) == SW_CLICKED) {
-    }
-    if (switchState(PIN_SW2L) == SW_CLICKED) {
-    }
-    if (switchState(PIN_SW2R) == SW_CLICKED) {
+//      sendMsg(TP_RCV_MSG_DATA_RATE,1); // High data rate (100/sec)
     }
     if (switchState(PIN_SW3L) == SW_CLICKED) {
       sendMsg(TP_RCV_MSG_LIGHTS, 7); // All lights on
@@ -205,8 +193,39 @@ void checkSwitches() {
       sendMsg(TP_RCV_MSG_LIGHTS, 0); // All lights off
     }
     break;
+    break;
+
+  case SW_ALT:
+    if (switchState(PIN_SW1L) == SW_CLICKED) {
+    }
+    if (switchState(PIN_SW1R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_VALSET, VAL_SET_A);
+    }
+    if (switchState(PIN_SW2L) == SW_CLICKED) {
+    }
+    if (switchState(PIN_SW2R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_VALSET, VAL_SET_B);
+    }
+    if (switchState(PIN_SW3L) == SW_CLICKED) {
+    }
+    if (switchState(PIN_SW3R) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_VALSET, VAL_SET_C);
+    }
+    break;
 
   case SW_ALT_CTRL:
+    if (switchState(PIN_SW1L) == SW_CLICKED) {
+      sendMsg(TP_RCV_MSG_MODE, MODE_TP5);
+    }
+    if (switchState(PIN_SW1R) == SW_CLICKED) {
+//      sendMsg(TP_RCV_MSG_MODE, MODE_TP6);
+    }
+    if (switchState(PIN_SW2L) == SW_CLICKED) {
+      // Backlight high
+    }
+    if (switchState(PIN_SW2R) == SW_CLICKED) {
+      // Backlight low
+    }
     if (switchState(PIN_SW3L) == SW_CLICKED) {
       powerDown();
     }
@@ -279,5 +298,13 @@ void checkConnected() {
   else {
     isConnected = false;
   }
+}
+
+// Toggle the value so tp knows it is a new message.
+boolean toggle() {
+  static boolean tg = false;
+  if (tg) tg = false;
+  else tg = true;
+  return tg;
 }
 

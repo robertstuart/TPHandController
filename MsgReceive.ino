@@ -36,8 +36,8 @@ boolean readXBee() {
       if (b == 0x7E) {
         packetByteCount = 0;
         packetInProgress = PACKET_MSB;
-        flushChecksum();
-        sendResponse();  // Start reply
+//        flushChecksum();
+        sendResponse();  // do reply
       }
       break;
     case PACKET_MSB:
@@ -140,9 +140,9 @@ void newPacket() {
   tpValSet = packetByteArray[TP_SEND_VALSET_STATUS];
   tpMode = packetByteArray[TP_SEND_MODE_STATUS];
   tpState = packetByteArray[TP_SEND_STATE_STATUS];
-  int msgType = packetByteArray[TP_SEND_MSG_ACK];
-  int msgVal = packetByteArray[TP_SEND_MSG_ACKVAL];
-  ackMsg(msgType, msgVal);
+//  int msgType = packetByteArray[TP_SEND_MSG_ACK];
+//  int msgVal = packetByteArray[TP_SEND_MSG_ACKVAL];
+//  ackMsg(msgType, msgVal);
 }
 
 int get2Byte(byte array[], int index) {
