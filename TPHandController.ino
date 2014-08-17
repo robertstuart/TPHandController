@@ -60,6 +60,9 @@ int tpValSetDisp = 99;
 int tpBattVolt = 0;
 unsigned long localBatteryUpdateTime = 0L;
 unsigned long tpBatteryUpdateTime = 0L;
+int tpMsgRcvType = 0;
+int tpMsgRcvVal = 0;
+
 
 // Status values on bottom line.  minus values are not displayed.
 int row4Values[] = {
@@ -218,7 +221,7 @@ void checkSwitches() {
       sendMsg(TP_RCV_MSG_MODE, MODE_TP5);
     }
     if (switchState(PIN_SW1R) == SW_CLICKED) {
-//      sendMsg(TP_RCV_MSG_MODE, MODE_TP6);
+      sendMsg(TP_RCV_MSG_MODE, MODE_TP7);
     }
     if (switchState(PIN_SW2L) == SW_CLICKED) {
       // Backlight high

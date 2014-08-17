@@ -7,8 +7,6 @@ byte sendArray[100];
 int transmitBufferLength = 1;  // So the flushChecksum() doesn't send 7E
 int transmitBufferPtr = 0;
 unsigned long transmitNextWriteTime = 0UL;
-int tpMsgRcvType = 0;
-int tpMsgRcvVal = 0;
 
 /*********************************************************
  *
@@ -23,21 +21,20 @@ void sendMsg(int rType, int rVal) {
   tpMsgRcvVal = rVal;  
 }
 
-///*********************************************************
-// *
-// * ackMsg()
-// *
-// *      An acknowledge received from TP.  At the moment, this does
-// *      nothing more than set the send value to zero.  Later, we could
-// *      have a queue.
-// *
-// *********************************************************/
-//void ackMsg(int tpMsgRcvType, int tpMsgRcvVal) {
-//  if ((tpMsgRcvType == tpMsgRcvType) && (tpMsgRcvVal == tpMsgRcvVal)) {
-//    tpMsgRcvType = TP_RCV_MSG_NULL;
-//    tpMsgRcvVal = 0;
-//  }
-//}
+/*********************************************************
+ *
+ * ackMsg()
+ *
+ *      An acknowledge received from TP.  This does
+ *      nothing more than set the send value to zero. 
+ *
+ *********************************************************/
+void ackMsg(int tpMsgRcvType, int tpMsgRcvVal) {
+  if ((tpMsgRcvType == tpMsgRcvType) && (tpMsgRcvVal == tpMsgRcvVal)) {
+    tpMsgRcvType = TP_RCV_MSG_NULL;
+    tpMsgRcvVal = 0;
+  }
+}
 
 
 /*********************************************************
