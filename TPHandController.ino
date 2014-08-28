@@ -101,9 +101,7 @@ void setup() {
 void loop() {
   timeMilliseconds = millis();
   if (readXBee()) { // true if we have just finished sending packet.
-    if ((tpState & TP_STATE_DATA) == 0) {
-      lcdUpdateTrigger = timeMilliseconds + 5; // Wait until write is complete.
-    }
+    lcdUpdateTrigger = timeMilliseconds + 5; // Wait until write is complete.
   }
   if (!isConnected) {
     if (lcdUpdateTrigger == ULONG_MAX) {
@@ -111,9 +109,7 @@ void loop() {
     }
   }
   if (timeMilliseconds > lcdUpdateTrigger) {
-    if ((tpState & TP_STATE_DATA) == 0) {
-      lcdUpdate();
-    }
+    lcdUpdate();
     lcdUpdateTrigger = ULONG_MAX;      
   }
   checkJoystick();

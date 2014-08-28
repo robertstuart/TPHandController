@@ -66,7 +66,7 @@ boolean readXBee() {
     case PACKET_RX:
       packetInProgress = doRx(b);
       if (packetInProgress == PACKET_DELIM) {
-        return true;  // We have just receive a complete packet.
+        return true;  // We have just received a complete packet.
       }
       break;
     case PACKET_TXS:
