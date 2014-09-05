@@ -29,8 +29,23 @@ int dataPtr = 0;
  * 
  ********************************************************************/
 boolean readXBee() {
+  static boolean escState = false;
+  
   while (Serial.available() > 0) {
     byte b = Serial.read();
+    
+    // Fix escape sequences
+    if (packetInProgress != PACKET_DELIM) {
+      if (escState) {
+        b = b ^ 0x20;
+        escState = false;
+      }
+      else if (b == 0x7D) {
+        escState = true;
+        return false;
+      }
+    }
+    
     switch(packetInProgress) {
     case PACKET_DELIM:
       if (b == 0x7E) {
@@ -133,22 +148,14 @@ int doRx(int b) {
  * 
  ********************************************************************/
 void newPacket() {
-
   tpMode = packetByteArray[TP_SEND_MODE_STATUS];
-  if (tpMode == BLOCK_DATA) {
-    tpMsgRcvType = TP_RCV_MSG_NULL;
-    tpMsgRcvVal = 0;
-    return;
-  }
+  if (tpMode == BLOCK_DATA) return;
   
   // Note: lastOffset is set to the offset AFTER the last value.
   msgTime = timeMilliseconds;
   tpBattVolt = get2Byte(packetByteArray, TP_SEND_BATTERY);
   tpValSet = packetByteArray[TP_SEND_VALSET_STATUS];
   tpState = packetByteArray[TP_SEND_STATE_STATUS];
-  int ackMsgType = packetByteArray[TP_SEND_MSG_ACK];
-  int ackMsgVal = packetByteArray[TP_SEND_MSG_ACKVAL];
-  ackMsg(ackMsgType, ackMsgVal);
 }
 
 int get2Byte(byte array[], int index) {

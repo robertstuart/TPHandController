@@ -146,11 +146,11 @@ void updateRow2() {
     if (tpModeDisp != tpMode) {
       cursor(0,1);
       switch (tpMode) {
-      case MODE_TP7:
-        lcdSerial.print("Mode: TP7 ");
-        break;
       case MODE_TP5:
         lcdSerial.print("Mode: TP5 ");
+        break;
+      case MODE_TP6:
+        lcdSerial.print("Mode: TP6 ");
         break;
       case MODE_DRIVE:
         lcdSerial.print("MD: DRIVE ");

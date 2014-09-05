@@ -135,14 +135,14 @@ void checkJoystick() {
  * checkSwitches()
  *               UNSHIFTED       CTRL           ALT       ALT_CTRL
  *-------
- * PIN_SW1L -  90deg Left        Run
- * PIN_SW1R -  90deg Right       Halt           TP4
+ * PIN_SW1L -  
+ * PIN_SW1R -  
  *-------
- * PIN_SW2L -  stream         
- * PIN_SW2R -  non-stream                       TP5
+ * PIN_SW2L - 
+ * PIN_SW2R -  
  *-------
- * PIN_SW3L -  running                                  Power down HC
- * PIN_SW3R -  idle                                     Power down TP
+ * PIN_SW3L - 
+ * PIN_SW3R - 
  *-------
  * PIN_SW4L ----------  CTRL shift key --------------        
  * PIN_SW4R ----------   ALT shift key --------------    
@@ -171,7 +171,6 @@ void checkSwitches() {
     if (switchState(PIN_SW3R) == SW_CLICKED) {
     }
     break;
-
   case SW_CTRL:
     if (switchState(PIN_SW1L) == SW_CLICKED) {
 //      sendMsg(TP_RCV_MSG_DATA,1);
@@ -192,8 +191,6 @@ void checkSwitches() {
       sendMsg(TP_RCV_MSG_LIGHTS, 0); // All lights off
     }
     break;
-    break;
-
   case SW_ALT:
     if (switchState(PIN_SW1L) == SW_CLICKED) {
     }
@@ -211,13 +208,12 @@ void checkSwitches() {
       sendMsg(TP_RCV_MSG_VALSET, VAL_SET_C);
     }
     break;
-
   case SW_ALT_CTRL:
     if (switchState(PIN_SW1L) == SW_CLICKED) {
       sendMsg(TP_RCV_MSG_MODE, MODE_TP5);
     }
     if (switchState(PIN_SW1R) == SW_CLICKED) {
-      sendMsg(TP_RCV_MSG_MODE, MODE_TP7);
+      sendMsg(TP_RCV_MSG_MODE, MODE_TP6);
     }
     if (switchState(PIN_SW2L) == SW_CLICKED) {
       // Backlight high
