@@ -20,24 +20,7 @@ unsigned long transmitNextWriteTime = 0UL;
 void sendMsg(int rType, int rVal) {
   tpMsgRcvType = rType;
   tpMsgRcvVal = rVal;
-  lcdDebug(rType, 0);
-  lcdDebug(rVal, 1); 
 }
-
-///*********************************************************
-// *
-// * ackMsg()
-// *
-// *      An acknowledge received from TP.  This does
-// *      nothing more than set the send value to zero.
-// *
-// *********************************************************/
-//void ackMsg(int tpMsgRcvType, int tpMsgRcvVal) {
-//  if ((tpMsgRcvType == tpMsgRcvType) && (tpMsgRcvVal == tpMsgRcvVal)) {
-//    tpMsgRcvType = TP_RCV_MSG_NULL;
-//    tpMsgRcvVal = 0;
-//  }
-//}
 
 
 /*********************************************************
@@ -48,12 +31,14 @@ void sendMsg(int rType, int rVal) {
  *
  *********************************************************/
 void sendResponse() {
-  set1Byte(sendArray, TP_RCV_X, x);
-  set1Byte(sendArray, TP_RCV_Y, y);
-  sendArray[TP_RCV_MSG_TYPE] = tpMsgRcvType;
-  set2Byte(sendArray, TP_RCV_MSG_VAL, tpMsgRcvVal);
-  sendTXFrame(XBEE_TWOPOTATOE, sendArray, TP_RCV_MAX);
-  tpMsgRcvType = TP_RCV_MSG_NULL;
+  if (!isSerialDebug()) {  // Don't send to XBee if we are using the uart as a debug port.
+    set1Byte(sendArray, TP_RCV_X, x);
+    set1Byte(sendArray, TP_RCV_Y, y);
+    sendArray[TP_RCV_MSG_TYPE] = tpMsgRcvType;
+    set2Byte(sendArray, TP_RCV_MSG_VAL, tpMsgRcvVal);
+    sendTXFrame(XBEE_TWOPOTATOE, sendArray, TP_RCV_MAX);
+    tpMsgRcvType = TP_RCV_MSG_NULL;
+  }
 }
 
 
@@ -128,7 +113,6 @@ void sendFrame(byte cmdDataHeader[], int cmdDataHeaderLength, byte cmdData[], in
   }
 
   Serial.write(xbeeBuffer, oPtr);
-  lcdDebug(oPtr, 2); 
   //flushChecksum();
 }
 

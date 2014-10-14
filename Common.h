@@ -8,11 +8,12 @@ const int MODE_DRIVE          = 2;  // sequences batch-loaded from controller
 const int MODE_TP4            = 3;  // Motor speed controlled from interrupts
 const int MODE_TP_SPEED       = 4;  // on-board motor speed
 const int MODE_TP_SEQUENCE    = 5;  // sequences batch-loaded from controller
-const int MODE_MT_SEQUNCE     = 6;  // motor test
-const int MODE_IMU            = 7;
+const int MODE_PULSE_SEQUENCE = 6;  // motor test
+const int MODE_PULSE          = 7;
 const int MODE_TP5            = 8;
 const int MODE_TP6            = 9;
 const int MODE_TP7            = 10;
+const int MODE_UNKNOWN        = 99;
 const int BLOCK_DATA          = 100; 
 
 // Status bits in the tpState byte
@@ -38,25 +39,22 @@ const int XBEE_BROADCAST =   0xFFFF;
 
 // XBee data packet bytes. Constant indicates positon i byte array.
 
-// Messages sent by TP
-const int TP_SEND_MODE_STATUS =    0;  // 1-byte, operating mode and packet type
-const int TP_SEND_STATE_STATUS =   1;  // 1-byte, Status bits
-const int TP_SEND_VALSET_STATUS =  2;  // 1-byte, from VAL_SET_XXX
-const int TP_SEND_BATTERY =        3;  // 2-byte, battery volt * 100
-const int TP_SEND_DEBUG =          5;  // 2-byte debug value
-const int TP_SEND_MSG_ACK =        7;  // 1-byte ack of TP_RCV_MSG_TYPE
-const int TP_SEND_MSG_ACKVAL =     8;  // 2-byte ack of TP_RCV_MSG_VAL
-const int TP_SEND_A_VAL =         10;  // 4-byte
-const int TP_SEND_B_VAL =         14;  // 4-byte
-const int TP_SEND_C_VAL =         18;  // 2-byte
-const int TP_SEND_D_VAL =         20;  // 2-byte
-const int TP_SEND_E_VAL =         22;  // 2-byte
-const int TP_SEND_F_VAL =         24;  // 2-byte
-const int TP_SEND_G_VAL =         26;  // 2-byte
-const int TP_SEND_H_VAL =         28;  // 2-byte
-const int TP_SEND_I_VAL =         30;  // 2-byte
-const int TP_SEND_J_VAL =         32;  // 2-byte
-const int TP_SEND_MAX =           34;
+	// Message\ sent by TP - byte position
+const int TP_SEND_FLAG =             0;  // 1-byte, Flag and packet type
+const int TP_SEND_VALUE =            1;  // 2-byte, value
+const int TP_SEND_END =              3;  // offset after last value	
+	
+	// Flag byte in TP_SEND_XXX
+const int TP_SEND_FLAG_PITCH =      0;  // 1-byte, Flag and packet type
+const int TP_SEND_FLAG_SPEED =      1;  
+const int TP_SEND_FLAG_MODE =       2; 
+const int TP_SEND_FLAG_STATE =      3;
+const int TP_SEND_FLAG_BMBATT =     4;
+const int TP_SEND_FLAG_EMBATT =     5;
+const int TP_SEND_FLAG_LBATT =      6;
+const int TP_SEND_FLAG_VALSET =     7;
+const int TP_SEND_FLAG_DEBUG =      8;	
+const int TP_SEND_FLAG_DUMP =      25;
 
 // Messages received by TwoPotatoe
 const int TP_RCV_MSG_TYPE =        0;  // 1-byte message type or packet type
@@ -77,22 +75,19 @@ const int TP_RCV_MSG_Z_VAL =       7;  //
 const int TP_RCV_MSG_POWER =       8;  // 
 const int TP_RCV_MSG_HOME =        9;  // 
 const int TP_RCV_MSG_LIGHTS =     10;  // 1st 3 bits of val
-//const int TP_RCV_MSG_DATA =       11;  // Stream data
-//const int TP_RCV_MSG_DATA_RATE =  12;  // 0 = 20/sec, 1 = 100/sec
-//const int TP_RCV_MSG_COLLECT =    13;  // 1 = on, 0 = off;
 const int TP_RCV_MSG_ROTATE =     14;    
-const int TP_RCV_MSG_START =      15;  // Run loaded sequence.
+const int TP_RCV_CMD_START_PW =   15;  // Run loaded pulse sequence.
 const int TP_RCV_MSG_RESET =      16;  // 
 const int TP_RCV_MSG_MODE =       17;  //
 const int TP_RCV_MSG_VALSET =     18;  // 
 const int TP_RCV_MSG_RUN_READY =  19;  // Run/Idle
-const int TP_RCV_MSG_BLOCK  =     20;  //
-const int TP_RCV_MSG_ROUTE  =     21;  // 
+const int TP_RCV_MSG_BLOCK  =     20;  //  Block data, stop transmitting
 const int TP_RCV_MSG_DSTART =     22;  //
 
 // Block types.  Must be non-overlapping with TP_RCV_MSG_xxx
-const int TP_BLOCK_ZERO     =    100;  // Must be greater than this
+const int TP_BLOCK_NULL     =    100;  // Must be greater than this
 const int TP_BLOCK_ROUTE    =    101;
+const int TP_BLOCK_PULSE    =    102;
 
 // Character definitions for route actions
 

@@ -1,289 +1,320 @@
 unsigned int updateRow = 0;
 int tpBattVoltDisp = 0;
-boolean isConnectedDisp1 = true;
-boolean isConnectedDisp2 = false;
-boolean isConnectedDisp3 = false;
+boolean isConnectedDisp = true;
+int debug1Disp = INT_MIN;
+int debug2Disp = INT_MIN;
+int tpStateDisp = 0;
+int tpModeDisp = MODE_UNKNOWN;
+int tpValSetDisp = 0;
+int tpBMBattDisp = 0;
+int tpEMBattDisp = 0;
+int tpLBattDisp = 0;
+int hcBattDisp = 0;
+int tpPitchDisp = 0;
+int tpFpsDisp = 0;
 
 // Initialize the LCD screen
 void lcdInit() {
-  if (digitalRead(PIN_SW1L) == LOW) { // need to reset things?
-    lcdSerial.begin(19200);
-    delay(1200);
-    lcdSerial.write(124);
-    lcdSerial.write(128);  // Set backlight (128-157)
-    delay(500);
-    powerDown();  // Turn off power.
-  }
-  if (digitalRead(PIN_SW1R) == LOW) { // need to reset things?
-    lcdSerial.begin(19200);
-    delay(1200);
-    lcdSerial.write(124);
-    lcdSerial.write(140);  // Set backlight (128-157)
-    delay(500);
-    powerDown();  // Turn off power.
-  }
-
-  if (digitalRead(PIN_SW2L) == LOW) { // need to reset things?
-    delay(100);
-    
-    // Resetting as in next 2 lines doesn't work -- too late?
-    //lcdSerial.begin(9600);  // Put chosen rate here.
-    //lcdSerial.write(18); // CTRL-R sets to 9600
-  
-    // May need to fiddle with next lines if baud rate has been lost.
-    // Be sure the processor is set to 3.3V 8MHz!
-    delay(1100);
-    lcdSerial.begin(19200);
-    //lcdSerial.write(124); 
-    //lcdSerial.write(15);   // 2400=11, 4800=12, 9600=13, 14400=14, 19200=15, 38400=16  
-    //delay(100);
-    //lcdSerial.begin(19200);
-    
-    
-    delay(1100);
-    //  Uncomment the following lines (only!) system settings are corrupt.
-    //lcdSerial.write(124);
-    //lcdSerial.write(3);  // Sets 20 characters wide
-    //lcdSerial.write(124);
-    //lcdSerial.write(5);  // Sets 4 lines tall
-    
-    //  Uncomment the following lines (only!) to change the splash.
-    //cursor(0,0);
-    //lcdSerial.print("     TwoPotatoe     ");
-    //cursor(0, 1);
-    //lcdSerial.print("   Hand Controller  ");
-    //lcdSerial.write(124);
-    //lcdSerial.write(10);
-
-  }
+//  if (digitalRead(PIN_SW1L) == LOW) { // need to reset things?
+//    lcdSerial.begin(19200);
+//    delay(1200);
+//    lcdSerial.write(124);
+//    lcdSerial.write(128);  // Set backlight (128-157)
+//    delay(500);
+//    powerDown();  // Turn off power.
+//  }
+//  if (digitalRead(PIN_SW1R) == LOW) { // need to reset things?
+//    lcdSerial.begin(19200);
+//    delay(1200);
+//    lcdSerial.write(124);
+//    lcdSerial.write(140);  // Set backlight (128-157)
+//    delay(500);
+//    powerDown();  // Turn off power.
+//  }
+//
+//  if (digitalRead(PIN_SW2L) == LOW) { // need to reset things?
+//    delay(100);
+//
+//    // Resetting as in next 2 lines doesn't work -- too late?
+//    //lcdSerial.begin(9600);  // Put chosen rate here.
+//    //lcdSerial.write(18); // CTRL-R sets to 9600
+//
+//    // May need to fiddle with next lines if baud rate has been lost.
+//    // Be sure the processor is set to 3.3V 8MHz!
+//    delay(1100);
+//    lcdSerial.begin(19200);
+//    //lcdSerial.write(124);
+//    //lcdSerial.write(15);   // 2400=11, 4800=12, 9600=13, 14400=14, 19200=15, 38400=16
+//    //delay(100);
+//    //lcdSerial.begin(19200);
+//
+//
+//    delay(1100);
+//    //  Uncomment the following lines (only!) system settings are corrupt.
+//    //lcdSerial.write(124);
+//    //lcdSerial.write(3);  // Sets 20 characters wide
+//    //lcdSerial.write(124);
+//    //lcdSerial.write(5);  // Sets 4 lines tall
+//
+//    //  Uncomment the following lines (only!) to change the splash.
+//    //cursor(0,0);
+//    //lcdSerial.print("     TwoPotatoe     ");
+//    //cursor(0, 1);
+//    //lcdSerial.print("   Hand Controller  ");
+//    //lcdSerial.write(124);
+//    //lcdSerial.write(10);
+//
+//  }
   delay(1200);  // Why do we need such a long delay?
-  lcdSerial.begin(19200);  // Put chosen rate here.
+  lcdSerial.begin(9600);  // Put chosen rate here.
+  delay(100);
+  clearScreen();
+  delay(100);
 }
 
 
 /*****************************************************
  *
- *    lcdUpdate() 
+ *    lcdUpdate()
  *
- *         Only called during "idle" periods so the 
+ *         Only called during "idle" periods so the
  *         SoftwareSerial does not interfere with
  *         activity on the UART.
  *
  ****************************************************/
-void lcdUpdate() { 
-  switch (updateRow++ % 4) {
-  case 0:
-    updateRow1();
-    break;
-  case 1:
-    updateRow2();
-    break;
-  case 2:
-    updateRow3();
-    break;
-  case 3:
-    lcdPrintStatusLine();
-    break;
+void lcdUpdate() {
+  lcdUpdateTrigger = timeMilliseconds + 100;
+  if (isConnectedDisp != isConnected) {
+    updateConnected();
+  }
+  else if (debug1Disp != debug1) {
+    debug1Disp = debug1;
+    setIntVal(0, 3, 6, debug1, " ");
+  }
+  else if (debug2Disp != debug2) {
+    debug2Disp = debug2;
+    setIntVal(7, 3, 6, debug2, " ");
+  }
+  else if (tpStateDisp != tpState) {
+    setState();
+  }
+  else if (tpModeDisp != tpMode) {
+    setMode();
+  }
+  else if (tpValSetDisp != tpValSet) {
+    setValSet();
+  }
+  else if (tpBMBattDisp != tpBMBatt) {
+    tpBMBattDisp = tpBMBatt;
+    setBattPct(0, tpBMBatt, 1.0, "b", false);
+  }
+  else if (tpEMBattDisp != tpEMBatt) {
+    tpEMBattDisp = tpEMBatt;
+    setBattPct(1, tpEMBatt, 1.5, "e", true);
+  }
+  else if (tpLBattDisp != tpLBatt) {
+    tpLBattDisp = tpLBatt;
+    setBattPct(2, tpLBatt, 1.5, "l", true);
+  }
+  else if (tpPitchDisp != tpPitch) {
+    setPitch();
+  }
+  else if (tpFpsDisp != tpFps) {
+    setFps();
+  }
+  else if (hcBattDisp != getHcBatt()) {
+    hcBattDisp = hcBatt;
+    setBattPct(3, hcBatt, 1.5, "h", true);
   }
 }
 
-
-/*****************************************************
- *    updateRow1() 
- ****************************************************/
-void updateRow1() {
+void updateConnected() {
+  isConnectedDisp = isConnected;
   if (!isConnected) {
-    if (isConnectedDisp1 == true) {
-      isConnectedDisp1 = false;
-      tpBattVoltDisp = 0;
-      tpStateDisp = -1;
-      cursor(0,0);
-      lcdSerial.print("---No Connection----");
-    }
+    cursor(0, 0);
+    lcdSerial.print("---No Connection----");
+    tpState = tpMode = tpValSet = tpFps = tpPitch = INT_MIN;
+    tpBMBatt = tpEMBatt = tpLBatt = INT_MIN;
   }
-  else {
-    isConnectedDisp1 = true;
-    lcdTpBattery();
-    if (tpStateDisp != tpState) {
-      tpStateDisp = tpState;
-      cursor(0,0);
-      if ((tpState & TP_STATE_RUN_READY) == 0) {
-        lcdSerial.print("Idle      ");
-      }
-      else if ((tpState & TP_STATE_RUNNING) != 0){
-        lcdSerial.print("Running   ");
-      }
-      else if ((tpState & TP_STATE_UPRIGHT) == 0){
-        lcdSerial.print("Fallen    ");
-      }
-      else if ((tpState & TP_STATE_ON_GROUND) == 0){
-        lcdSerial.print("Lifted    ");
-      }
-      else {
-        lcdSerial.print("????      ");
-      }
-    }
-  }
-} // end updateRow1() 
+}
 
-
-/*****************************************************
- *    updateRow2() 
- ****************************************************/
-void updateRow2() {
-  if (!isConnected) {
-    lcdLocalBattery();
-    if (isConnectedDisp2 == true) {
-      isConnectedDisp2 = false;
-      tpModeDisp = -1;
-      cursor(0,1);
-      lcdSerial.print("          ");
+void setState() {
+  char* stateStr;
+  tpStateDisp = tpState;
+  cursor(0, 0);
+  if (tpState != INT_MIN) {
+    if (isStateBitSet(TP_STATE_RUNNING)) {
+      stateStr = "Run! ";
     }
+    else if (isStateBitSet(TP_STATE_RUN_READY)) {
+      if (isStateBitClear(TP_STATE_UPRIGHT)) stateStr = "Fall ";
+      else stateStr = "Lift ";
+    }
+    else {
+      stateStr = "Idle ";
+    }  
+    lcdSerial.print(stateStr);
   }
-  else {
-    isConnectedDisp2 = true;
-    lcdLocalBattery();
-    if (tpModeDisp != tpMode) {
-      cursor(0,1);
-      switch (tpMode) {
+}
+
+void setMode() {
+  char* modeStr = "";
+  tpModeDisp = tpMode;
+  if (tpMode != INT_MIN) {
+    cursor(5, 0);
+    switch (tpMode) {
       case MODE_TP5:
-        lcdSerial.print("Mode: TP5 ");
+        modeStr = "TP5 ";
         break;
       case MODE_TP6:
-        lcdSerial.print("Mode: TP6 ");
-        break;
-      case MODE_DRIVE:
-        lcdSerial.print("MD: DRIVE ");
+        modeStr = "TP6 ";
         break;
       default:
-        lcdSerial.print("Unknown MD");
+        modeStr = "TP? ";
         break;
-      }
     }
+    lcdSerial.print(modeStr);
   }
-} // end updateRow2() 
-
-
-/*****************************************************
- *    updateRow3() 
- ****************************************************/
-void updateRow3() {
-  if (!isConnected) {
-    if (isConnectedDisp3 == true) {
-      isConnectedDisp3 = false;
-      tpModeDisp = -1;
-      cursor(0,2);
-      lcdSerial.print("                    ");
-    }
-  }
-  else {
-    isConnectedDisp3 = true;
-    if (tpModeDisp != tpMode) {
-      cursor(0,2);
-      switch (tpValSet) {
-      case VAL_SET_A:
-        lcdSerial.print("Set: A    ");
-        break;
-      case VAL_SET_B:
-        lcdSerial.print("Set: B    ");
-        break;
-      case VAL_SET_C:
-        lcdSerial.print("Set: C    ");
-        break;
-      default:
-        lcdSerial.print("          ");
-        break;
-      }
-    }
-  }
-} // end updateRow3() 
-
-
-
-void lcdLocalBattery() {
-  float volt = getLocalBattery();
-  if (volt < 7.0f) {
-    lowBattery();
-  }
-//  a * 0.0092f;
-  printVolt(10, 1, volt);
-  printPct(16, 1, false, volt);
 }
 
-float getLocalBattery() {
+void setValSet() {
+  char* valSetStr = "";
+  tpValSetDisp = tpValSet;
+  if (tpValSet != INT_MIN) {
+    cursor(9, 0);
+    switch (tpValSet) {
+      case 0:
+        valSetStr = "SetA    ";
+        break;
+      case 1:
+        valSetStr = "SetB    ";
+                 break;
+      case 2:
+        valSetStr = "SetC    ";
+                 break;
+      default:
+        valSetStr = "Set?    ";
+                 break;
+    }
+    lcdSerial.print(valSetStr);
+  }
+}
+
+void setFps() {
+  tpFpsDisp = tpFps;
+  if (tpFps == INT_MIN) {
+    cursor(0, 1);
+    lcdSerial.print("        ");
+  }
+  else {
+    setFloatVal(0, 1, 3, tpFps, "fps ");
+  }
+}
+
+void setPitch() {
+  char fill[] = {223, 32, 32, 32, 0};
+  tpPitchDisp = tpPitch;
+  if (tpPitch == INT_MIN) {
+    cursor(8, 1);
+    lcdSerial.print("         ");
+  }
+  else {
+    setFloatVal(8, 1, 4, tpPitch, fill); //º
+  }
+}
+
+void setIntVal(int x, int y, int width, int val, char* trail) {
+  char spaces[] = "          ";
+  int spaceCount;
+  cursor(x, y);
+  if (val >= 10000) spaceCount = 1;
+  else if (val >= 1000) spaceCount = 0;
+  else if (val >= 100) spaceCount = 1;
+  else if (val >= 10) spaceCount = 2;
+  else if (val >= 0) spaceCount = 3;
+  else if (val > -10) spaceCount = 2;
+  else if (val > -100) spaceCount = 1;
+  else if (val > -1000) spaceCount = 0;
+  else if (val > -10000) spaceCount = 0;
+  else spaceCount = 0;
+  spaceCount = (spaceCount - 4) + width;
+  if (spaceCount < 0) spaceCount = 0;
+  lcdSerial.write(spaces, spaceCount);
+  lcdSerial.print(val);
+  lcdSerial.print(trail);
+}
+
+// "val" is and int 100 x
+void setFloatVal(int x, int y, int width, int val, char trail[]) {
+  char spaces[] = "          ";
+  int spaceCount;
+  float fVal = ((float) val) / 100.0;
+  if (fVal >= 10.0) spaceCount = 1;
+  else if (fVal >= 0.0) spaceCount = 2;  // >=100.0
+  else if (fVal > -10.0) spaceCount = 1;   // >= 10.0
+  else  spaceCount = 0;      // >= 0.0
+  spaceCount = (spaceCount - 4) + width;
+  if (spaceCount < 0) spaceCount = 0;
+  cursor(x, y);
+  lcdSerial.write(spaces, spaceCount);
+  float v = ((float) val) / 100.0;
+  lcdSerial.print(v, 1);
+  lcdSerial.print(trail);
+//  if (y == 
+}
+
+void setBattPct(int y, int volt, float factor, char trail[], boolean clr) {
+  cursor(16, y);
+  if (volt == INT_MIN) {
+    if (clr) lcdSerial.print("    ");
+  }
+  else {
+    int newVolt = (int) (((float) volt) * factor);
+    float pct = getPct(newVolt);
+    setIntVal(16, y, 3, (int) pct, trail);
+  }
+}
+
+int getHcBatt() {
   int a = analogRead(PIN_BATT);
-  return ((float) a) * .009;    
+debug1 = 942;
+  hcBatt = (int) ((1000L * a) / 1120L);
+  lowBattery();
+  return hcBatt;
 }
 
 void lowBattery() {
-  clearScreen();
-  cursor(0,0);
-  lcdSerial.print("--- Low Battery ----");
-  delay(100);
-  while(getLocalBattery() < 7.0) {
-    delay(100);
+  if (hcBatt < 630) {
+    if (timeMilliseconds < timeLowBatt) timeLowBatt = timeMilliseconds;
+    cursor(0, 2);
+    lcdSerial.print("--- Low Battery ----");
+    if ((timeMilliseconds - timeLowBatt) > 100000L) powerDown(); // 100 seconds.
   }
 }
 
-void lcdTpBattery() {
-  if (tpBattVoltDisp != tpBattVolt) { 
-    tpBattVoltDisp = tpBattVolt;
-    float volt = ((float) tpBattVolt) * 0.01;
-    printVolt(10, 0, volt);
-    printPct(16, 0, true, volt);
-  }
-}
-
-void printVolt(int x, int y, float volt) {
-  cursor(x, y);
-  if (volt < 10.00) {
-    lcdSerial.print(" ");
-  }
-  lcdSerial.print(volt);
-  lcdSerial.print("V");
-}
-
-void printPct(int x, int y, boolean src, float volt) {
-  cursor(x, y);
-  int pct = (int) getPct(src, volt);
-  if (pct < 10) {
-    lcdSerial.print("  ");
-  }
-  else if (pct < 100) {
-    lcdSerial.print(" ");
-  } 
-  lcdSerial.print(pct);
-  lcdSerial.print("%");
-}
-
-
-void lcdValSet() {
-}
-
-float tpVolt[] = { 
-  12.6f, 11.99f, 11.75f, 11.54f, 11.23f, 11.05f, 10.83f, 10.63f, 10.35f, 9.0f};
+float tpVolt[] = {
+  12.6f, 11.99f, 11.75f, 11.54f, 11.23f, 11.05f, 10.83f, 10.63f, 10.35f, 9.0f
+};
 float tpPct[] =  {
-  100.0f, 83.0f,  71.0f,  60.0f,  34.0f,  20.0f,  07.0f,  05.0f,  03.0f,  0.0f};
-float localVolt[] = {  
-  8.4f,  8.09f, 7.57f, 7.34f, 7.12f, 6.0f};
+  100.0f, 83.0f,  71.0f,  60.0f,  34.0f,  20.0f,  07.0f,  05.0f,  03.0f,  0.0f
+};
+float localVolt[] = {
+  8.4f,  8.09f, 7.57f, 7.34f, 7.12f, 6.0f
+};
 float localPct[] =  {
-  100.0f, 88.0f, 49.0f,  20.0f, 5.0f,  0.0f};
+  100.0f, 88.0f, 49.0f,  20.0f, 5.0f,  0.0f
+};
 
-// Convert battery voltage to percent                  
-float getPct(boolean src, float batteryVolt) {
+// Convert battery voltage to percent
+float getPct(int iVolt) {
+  float batteryVolt = ((float) iVolt) / 100;
   float* volt;
   float* pct;
   int voltSize;
-  if (src) {
-    volt = tpVolt;
-    pct = tpPct;
-    voltSize = sizeof(tpVolt)/sizeof(float); 
-  }
-  else {
-    volt = localVolt;
-    pct = localPct;
-    voltSize = sizeof(localVolt)/sizeof(float); 
-  }
+
+  volt = tpVolt;
+  pct = tpPct;
+  voltSize = sizeof(tpVolt) / sizeof(float);
 
   if (volt[0] < batteryVolt) {
     return 100.0f;
@@ -295,31 +326,31 @@ float getPct(boolean src, float batteryVolt) {
     if (volt[i] < batteryVolt) {
       float rangeVolt = volt[i - 1] - volt[i];
       float rangePct = pct[i - 1] - pct[i];
-      float voltPct = (batteryVolt - volt[i])/rangeVolt;
-      return pct[i] +(voltPct * rangePct);
+      float voltPct = (batteryVolt - volt[i]) / rangeVolt;
+      return pct[i] + (voltPct * rangePct);
     }
   }
-  return-99.0f;
+  return -99.0f;
 }
 
 /**************************** LCD commands ***********************/
 void cursor(int x, int y)  { // origin is 0,0
   int base;
   switch (y) {
-  case 0:
-    base = 0;
-    break;
-  case 1:
-    base = 64;
-    break;
-  case 2:
-    base = 20;
-    break;
-  case 3:
-    base = 84;
-    break;
-  default:
-    base = 0;
+    case 0:
+      base = 0;
+      break;
+    case 1:
+      base = 64;
+      break;
+    case 2:
+      base = 20;
+      break;
+    case 3:
+      base = 84;
+      break;
+    default:
+      base = 0;
   }
   base += 128 + x;
   lcdSerial.write(0xFE);
@@ -328,24 +359,9 @@ void cursor(int x, int y)  { // origin is 0,0
 
 void clearScreen() {
   lcdSerial.write(0xFE);
-  lcdSerial.write(0x01); 
+  lcdSerial.write(0x01);
 }
 
-// Save number in array of 5 columns of 4 digits each.
-void lcdDebug(int num, int column) {
-  if ((column < 0) || (column > 4)) {
-    return;
-  }
-  if (num > 999) {
-    row4Values[column] = -2; // Error
-  }
-  else if (num < 0) {
-    row4Values[column] = -1; // Blank
-  }
-  else {
-    row4Values[column] = num; 
-  }
-}
 
 // Print the status line.
 void lcdPrintStatusLine() {
@@ -363,13 +379,13 @@ void lcdPrintStatusLine() {
       else {
         if (value < 10) {
           lcdSerial.print("   ");
-        } 
+        }
         else if (value < 100) {
           lcdSerial.print("  ");
-        } 
+        }
         else {
           lcdSerial.print(" ");
-        } 
+        }
         lcdSerial.print(value);
       }
     }
@@ -377,7 +393,7 @@ void lcdPrintStatusLine() {
 }
 
 void setSplash() {
-  cursor(0,0);
+  cursor(0, 0);
   lcdSerial.print("     TwoPotatoe2    ");
   cursor(0, 1);
   lcdSerial.print("   Hand Controller  ");
