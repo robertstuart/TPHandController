@@ -20,6 +20,7 @@ const int PIN_VKEY = A3;  // Vkey switches
 unsigned long tStart = 0;
 
 boolean lightState = false;
+int key;
 int oldKey = 99;
 int oldShift = 99;
 
@@ -46,20 +47,14 @@ int tpBMBattPct = 0;
 int tpEMBattPct = 0;
 int tpLBattPct = 0;
 int hcBattPct = 0;
-int debug1 = 0;
-int debug2 = 0;
+int debug1 = 0; // Write to this to display value on row 4
+int debug2 = 0; // Write to this to display value on row 4
 int tpMode = MODE_TP4;
 int tpValSet = 99;
 int tpBattVolt = 0;
 int tpMsgRcvType = 0;
 int tpMsgRcvVal = 0;
 
-
-// Status values on bottom line.  minus values are not displayed.
-int row4Values[] = {
-  -1,-1,-1,-1,-1};
-int row4ValuesDisplay[] = {
-  -1,-1,-1,-1,-1};
 
 /*****************************************************
  *
@@ -88,7 +83,7 @@ void loop() {
   timeMilliseconds = millis();
   if (readXBee() || (timeMilliseconds > lcdUpdateTrigger)) { // true if we have just finished sending packet.
     lcdUpdate();
-    if (isSerialDebug) serialDebugOut();
+    if (isSerialDebug()) serialDebugOut();
   }
 
 
@@ -96,15 +91,9 @@ void loop() {
   checkSwitches();
   checkConnected();
   if (ledBlink()) {
-//    cursor(0,0);
-//    int a = analogRead(PIN_VKEY);
-//    lcdSerial.print(a);
-//    lcdSerial.print("   ");
-//    cursor(0,1);
-//    int key = 13 - ((a + 30) / 61);
-//    lcdSerial.print(key);
-//    lcdSerial.print("   ");
-//    serialDebugOut();
+  }
+  if ((timeMilliseconds - activeTime) > 300000) { // 5 minutes idle?
+    powerDown();
   }
 }
 
@@ -121,6 +110,9 @@ void checkJoystick() {
   int b = analogRead(PIN_Y);
   if ((b > (512 - JOY_ZERO)) && (b < (512 + JOY_ZERO))) b = 512;
   y = ((b -512) / 4); // scale to +- 128
+  if ((a != 512) || (b != 512)) {
+    activeTime = timeMilliseconds;
+  }
 }
 
 /*****************************************************
@@ -128,7 +120,7 @@ void checkJoystick() {
  * checkSwitches()
  ****************************************************/
 void checkSwitches() {
-  int key = 13 - ((analogRead(PIN_VKEY) + 30) / 61);
+  key = 13 - ((analogRead(PIN_VKEY) + 30) / 61);
   int shift = digitalRead(PIN_SW3);
   if ((key == oldKey) && (shift == oldShift)) {
     return;
@@ -136,6 +128,9 @@ void checkSwitches() {
   else {
     oldKey = key;
     oldShift = shift;
+  }
+  if (key != 13) {
+    activeTime = timeMilliseconds;
   }
   if (shift == HIGH) {  // Shift key not pressed
     switch (key) {
@@ -156,6 +151,7 @@ void checkSwitches() {
       case 7:
         break;
       case 8:
+        sendMsg(TP_RCV_MSG_DSTART,0); // Dump data
         break;
       case 9:
         break;
@@ -283,17 +279,11 @@ boolean toggle() {
 
 // Check to see if the debug key is pressed.
 boolean isSerialDebug() {
-  if (digitalRead(PIN_SW3) == LOW) return true;
+  if (digitalRead(PIN_SW5) == LOW) return true;
   else return false;
 }
 
 void serialDebugOut() {
-    int a = analogRead(PIN_VKEY);
-  int key = 13 - ((a + 22) / 40);
-  Serial.print(key);
-  Serial.print("\t");
-  Serial.println(a);
-  if (digitalRead(PIN_SW3) == LOW) Serial.println("sw3");
-  if (digitalRead(PIN_SW4) == LOW) Serial.println("sw4");
-  if (digitalRead(PIN_SW5) == LOW) Serial.println("sw5");
+  // Place any debug printing here
+  Serial.println(key);
 }

@@ -277,19 +277,8 @@ void setBattPct(int y, int volt, float factor, char trail[], boolean clr) {
 
 int getHcBatt() {
   int a = analogRead(PIN_BATT);
-debug1 = 942;
   hcBatt = (int) ((1000L * a) / 1120L);
-  lowBattery();
   return hcBatt;
-}
-
-void lowBattery() {
-  if (hcBatt < 630) {
-    if (timeMilliseconds < timeLowBatt) timeLowBatt = timeMilliseconds;
-    cursor(0, 2);
-    lcdSerial.print("--- Low Battery ----");
-    if ((timeMilliseconds - timeLowBatt) > 100000L) powerDown(); // 100 seconds.
-  }
 }
 
 float tpVolt[] = {
@@ -363,34 +352,6 @@ void clearScreen() {
 }
 
 
-// Print the status line.
-void lcdPrintStatusLine() {
-  for (int i = 0; i < 5; i++) {
-    if (row4Values[i] != row4ValuesDisplay[i]) {
-      int value = row4Values[i];
-      row4ValuesDisplay[i] = value;
-      cursor(4 * i, 3);
-      if (value == -1) {
-        lcdSerial.print("    ");
-      }
-      else if (value == -2) {
-        lcdSerial.print(" ERR");
-      }
-      else {
-        if (value < 10) {
-          lcdSerial.print("   ");
-        }
-        else if (value < 100) {
-          lcdSerial.print("  ");
-        }
-        else {
-          lcdSerial.print(" ");
-        }
-        lcdSerial.print(value);
-      }
-    }
-  }
-}
 
 void setSplash() {
   cursor(0, 0);
