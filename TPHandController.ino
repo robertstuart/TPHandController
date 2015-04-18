@@ -6,16 +6,16 @@ SoftwareSerial lcdSerial(12, 2); // RX, TX
 #define ULONG_MAX 4294967295L
 #define INT_MIN -32768
 
-const int PIN_SW3 = 3;   // Shift key, lower left
-const int PIN_SW4 = 4;   // Debut key, ??right
-const int PIN_SW5 = 5;
+const int PIN_SW3 = 3;   // Wh Shift key, lower left
+const int PIN_SW4 = 4;   // Gy unused
+const int PIN_SW5 = 5;   // Wh Debug
 const int PIN_PWR = 11;
 const int PIN_LED = 13;
 
-const int PIN_X = A0;     // Joystick
-const int PIN_Y = A1;     // Joystick
+const int PIN_X = A0;     // Gn Joystick
+const int PIN_Y = A1;     // Bu Joystick
 const int PIN_BATT = A2;  // Battery voltage
-const int PIN_VKEY = A3;  // Vkey switches
+const int PIN_VKEY = A3;  // Vi Vkey switches
 
 unsigned long tStart = 0;
 
@@ -40,16 +40,14 @@ float tpPitch = 0.0;
 float tpFps = 0.0;
 int tpState = 0;
 int hcBatt = 0;
-int tpBMBatt = 0;
-int tpEMBatt = 0;
-int tpLBatt = 0;
-int tpBMBattPct = 0;
-int tpEMBattPct = 0;
-int tpLBattPct = 0;
+int tpBatt = 0;
+int tpBattPct = 0;
 int hcBattPct = 0;
 int debug1 = 0; // Write to this to display value on row 4
 int debug2 = 0; // Write to this to display value on row 4
-int tpMode = MODE_TP4;
+int yaw = 12340;
+int sonarDistance = 5670;
+int tpMode = MODE_TP5;
 int tpValSet = 99;
 int tpBattVolt = 0;
 int tpMsgRcvType = 0;
@@ -120,49 +118,57 @@ void checkJoystick() {
  * checkSwitches()
  ****************************************************/
 void checkSwitches() {
-  key = 13 - ((analogRead(PIN_VKEY) + 30) / 61);
   int shift = digitalRead(PIN_SW3);
+  key = readKey();
   if ((key == oldKey) && (shift == oldShift)) {
     return;
   }
   else {
+    for (int i = 0; i < 10; i++) {
+      delayMicroseconds(100);
+      if (key != readKey()) return;
+    }
     oldKey = key;
     oldShift = shift;
   }
   if (key != 13) {
     activeTime = timeMilliseconds;
   }
+debug1 = key;
   if (shift == HIGH) {  // Shift key not pressed
     switch (key) {
-      case 1:
+      case 1: // top row right
         break;
-      case 2:
+      case 2: // top row middle
         break;
-      case 3:
-        sendMsg(TP_RCV_MSG_RUN_READY,1); 
+      case 3: // top row left
+        if (isStateBitSet(TP_STATE_RUN_READY))  sendMsg(TP_RCV_MSG_RUN_READY, 0);
+        else sendMsg(TP_RCV_MSG_RUN_READY, 1); 
         break;
-      case 4:
+      case 4: // 2nd row right
         break;
-      case 5:
+      case 5: // 2nd row middle
         break;
-      case 6:
-        sendMsg(TP_RCV_MSG_RUN_READY,0); 
+      case 6: // 2nd row left
+        if (isStateBitSet(TP_STATE_LIFTSENSE))  sendMsg(TP_RCV_MSG_LIFTSENSE, 0);
+        else sendMsg(TP_RCV_MSG_LIFTSENSE, 1); 
         break;
-      case 7:
+      case 7: // 3rd row right
+        sendMsg(TP_RCV_MSG_JUMP,0);
         break;
-      case 8:
-        sendMsg(TP_RCV_MSG_DSTART,0); // Dump data
+      case 8: // 3rd row middle
         break;
-      case 9:
+      case 9: // 3rd row right
         break;
-      case 10:
+      case 10: // 4th row right
         if (lightState) sendMsg(TP_RCV_MSG_LIGHTS, 7); // All lights on
         else sendMsg(TP_RCV_MSG_LIGHTS, 0); // All lights off
         lightState = ! lightState;
         break;
-      case 11:
+      case 11: // 4th row middle
+        sendMsg(TP_RCV_MSG_DSTART,0); // Dump data
         break;
-      case 12:
+      case 12: // 4th row left
         break;
       default: 
         break;     
@@ -189,17 +195,24 @@ void checkSwitches() {
       case 8:
         break;
       case 9:
+        sendMsg(TP_RCV_MSG_MODE, MODE_TP5);
         break;
       case 10:
         break;
       case 11:
         break;
       case 12:
+        sendMsg(TP_RCV_MSG_MODE, MODE_TP6);
         break;
       default:   
         break;   
     } 
   }
+}
+
+int readKey() {
+  int vk = analogRead(PIN_VKEY);
+  return(13 - ((vk + 30) / 61));
 }
 
 void powerDown() {

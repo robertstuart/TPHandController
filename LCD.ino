@@ -1,17 +1,18 @@
 unsigned int updateRow = 0;
 int tpBattVoltDisp = 0;
+int sonarDistanceDisp = 0;
+int yawDisp = 0;
 boolean isConnectedDisp = true;
 int debug1Disp = INT_MIN;
 int debug2Disp = INT_MIN;
 int tpStateDisp = 0;
 int tpModeDisp = MODE_UNKNOWN;
 int tpValSetDisp = 0;
-int tpBMBattDisp = 0;
-int tpEMBattDisp = 0;
-int tpLBattDisp = 0;
+int tpBattDisp = 0;
 int hcBattDisp = 0;
 int tpPitchDisp = 0;
 int tpFpsDisp = 0;
+boolean tpLiftDisp = 0;
 
 // Initialize the LCD screen
 void lcdInit() {
@@ -66,7 +67,7 @@ void lcdInit() {
 //
 //  }
   delay(1200);  // Why do we need such a long delay?
-  lcdSerial.begin(9600);  // Put chosen rate here.
+  lcdSerial.begin(14400);  // Put chosen rate here.
   delay(100);
   clearScreen();
   delay(100);
@@ -87,34 +88,34 @@ void lcdUpdate() {
   if (isConnectedDisp != isConnected) {
     updateConnected();
   }
-  else if (debug1Disp != debug1) {
-    debug1Disp = debug1;
-    setIntVal(0, 3, 6, debug1, " ");
-  }
-  else if (debug2Disp != debug2) {
-    debug2Disp = debug2;
-    setIntVal(7, 3, 6, debug2, " ");
-  }
+//  else if (sonarDistanceDisp != sonarDistance) {
+//    sonarDistanceDisp = sonarDistance;
+//    setFloatVal(15, 1, 3, sonarDistance, ""); //
+//  }
+//  else if (yawDisp != yaw) {
+//    yawDisp = yaw;
+//    setFloatVal(13, 2, 5, yaw, ""); //
+//  }
+//  else if (debug1Disp != debug1) {
+//    debug1Disp = debug1;
+//    setIntVal(0, 3, 6, debug1, " ");
+//  }
+//  else if (debug2Disp != debug2) {
+//    debug2Disp = debug2;
+//    setIntVal(7, 3, 6, debug2, " ");
+//  }
   else if (tpStateDisp != tpState) {
     setState();
   }
   else if (tpModeDisp != tpMode) {
     setMode();
   }
-  else if (tpValSetDisp != tpValSet) {
-    setValSet();
-  }
-  else if (tpBMBattDisp != tpBMBatt) {
-    tpBMBattDisp = tpBMBatt;
-    setBattPct(0, tpBMBatt, 1.0, "b", false);
-  }
-  else if (tpEMBattDisp != tpEMBatt) {
-    tpEMBattDisp = tpEMBatt;
-    setBattPct(1, tpEMBatt, 1.5, "e", true);
-  }
-  else if (tpLBattDisp != tpLBatt) {
-    tpLBattDisp = tpLBatt;
-    setBattPct(2, tpLBatt, 1.5, "l", true);
+//  else if (tpValSetDisp != tpValSet) {
+//    setValSet();
+//  }
+  else if (tpBattDisp != tpBatt) {
+    tpBattDisp = tpBatt;
+    setBattPct(0, tpBatt, 0.75, "b", false);
   }
   else if (tpPitchDisp != tpPitch) {
     setPitch();
@@ -134,7 +135,7 @@ void updateConnected() {
     cursor(0, 0);
     lcdSerial.print("---No Connection----");
     tpState = tpMode = tpValSet = tpFps = tpPitch = INT_MIN;
-    tpBMBatt = tpEMBatt = tpLBatt = INT_MIN;
+    tpBatt = INT_MIN;
   }
 }
 
@@ -212,11 +213,11 @@ void setFps() {
 }
 
 void setPitch() {
-  char fill[] = {223, 32, 32, 32, 0};
+  char fill[] = {223, 32, 0};
   tpPitchDisp = tpPitch;
   if (tpPitch == INT_MIN) {
     cursor(8, 1);
-    lcdSerial.print("         ");
+    lcdSerial.print("      ");
   }
   else {
     setFloatVal(8, 1, 4, tpPitch, fill); //º
@@ -244,23 +245,23 @@ void setIntVal(int x, int y, int width, int val, char* trail) {
   lcdSerial.print(trail);
 }
 
-// "val" is and int 100 x
+// "val" is an int X 100
 void setFloatVal(int x, int y, int width, int val, char trail[]) {
   char spaces[] = "          ";
   int spaceCount;
-  float fVal = ((float) val) / 100.0;
-  if (fVal >= 10.0) spaceCount = 1;
-  else if (fVal >= 0.0) spaceCount = 2;  // >=100.0
-  else if (fVal > -10.0) spaceCount = 1;   // >= 10.0
-  else  spaceCount = 0;      // >= 0.0
+  float fVal = ((float) val) / 100.0; 
+  if (fVal >= 100.0) spaceCount = 1;        // 100.0 - 999.9
+  else if (fVal >= 10.0) spaceCount = 2;    //  10.0 -  99.0
+  else if (fVal >= 0.0) spaceCount = 3;     //   0.0 -   9.9
+  else if (fVal >= -9.9) spaceCount = 2;    //  -0.1 -  -9.9
+  else if (fVal >= -99.9) spaceCount = 1;   // -10.0 -  -99.9
+  else  spaceCount = 0;                     // -100.0 - -999.9
   spaceCount = (spaceCount - 4) + width;
-  if (spaceCount < 0) spaceCount = 0;
   cursor(x, y);
   lcdSerial.write(spaces, spaceCount);
   float v = ((float) val) / 100.0;
   lcdSerial.print(v, 1);
   lcdSerial.print(trail);
-//  if (y == 
 }
 
 void setBattPct(int y, int volt, float factor, char trail[], boolean clr) {

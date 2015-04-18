@@ -149,6 +149,8 @@ int doRx(int b) {
  ********************************************************************/
 void newPacket() {
   msgTime = timeMilliseconds;
+//  yaw = get2Byte(packetByteArray, TP_SEND_YAW);
+//  sonarDistance = 999;//(int) (((float) get2Byte(packetByteArray, TP_SEND_SONAR)) * 2.9);
   int val = get2Byte(packetByteArray, TP_SEND_VALUE);
   switch (packetByteArray[TP_SEND_FLAG]) {
     case TP_SEND_FLAG_PITCH:
@@ -163,20 +165,14 @@ void newPacket() {
     case TP_SEND_FLAG_STATE:
       tpState = val;
       break;
-    case TP_SEND_FLAG_BMBATT:
-      tpBMBatt = val;
-      break;
-    case TP_SEND_FLAG_EMBATT:
-      tpEMBatt = val;
-      break;
-    case TP_SEND_FLAG_LBATT:
-      tpLBatt = val;
+    case TP_SEND_FLAG_BATT:
+      tpBatt = val;
       break;
     case TP_SEND_FLAG_VALSET:
       tpValSet = val;
       break;
     case TP_SEND_FLAG_DEBUG:
-      debug1 = val;
+//      debug1 = val;
       break;
     case TP_SEND_FLAG_DUMP:
       //			mf.dataFile.doDataBlock(rcvArray);

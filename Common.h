@@ -23,7 +23,7 @@ const int TP_STATE_UPRIGHT         = 0B00000100;  // Status: tp is upright (not 
 const int TP_STATE_ON_GROUND       = 0B00001000;  // Status: pressure sensor indicates standing.
 const int TP_STATE_HC_ACTIVE       = 0B00010000;  // Status: Hand Controller connected
 const int TP_STATE_PC_ACTIVE       = 0B00100000;  // Status: PC connected
-const int TP_STATE_UNUSED          = 0B01000000;
+const int TP_STATE_LIFTSENSE       = 0B01000000;  // True if tp goes idle on lift
 const int TP_STATE_DUMPING         = 0B10000000;  // Dumping in either direction
 
 // value sets
@@ -42,16 +42,16 @@ const int XBEE_BROADCAST =   0xFFFF;
 	// Message\ sent by TP - byte position
 const int TP_SEND_FLAG =             0;  // 1-byte, Flag and packet type
 const int TP_SEND_VALUE =            1;  // 2-byte, value
-const int TP_SEND_END =              3;  // offset after last value	
+const int TP_SEND_SONAR =            3;  // 2-byte Sonar distance
+const int TP_SEND_YAW =              5;  // Sonar distance
+const int TP_SEND_END =              7;  // offset after last value	
 	
 	// Flag byte in TP_SEND_XXX
 const int TP_SEND_FLAG_PITCH =      0;  // 1-byte, Flag and packet type
 const int TP_SEND_FLAG_SPEED =      1;  
 const int TP_SEND_FLAG_MODE =       2; 
 const int TP_SEND_FLAG_STATE =      3;
-const int TP_SEND_FLAG_BMBATT =     4;
-const int TP_SEND_FLAG_EMBATT =     5;
-const int TP_SEND_FLAG_LBATT =      6;
+const int TP_SEND_FLAG_BATT =       4;
 const int TP_SEND_FLAG_VALSET =     7;
 const int TP_SEND_FLAG_DEBUG =      8;	
 const int TP_SEND_FLAG_DUMP =      25;
@@ -83,6 +83,8 @@ const int TP_RCV_MSG_VALSET =     18;  //
 const int TP_RCV_MSG_RUN_READY =  19;  // Run/Idle
 const int TP_RCV_MSG_BLOCK  =     20;  //  Block data, stop transmitting
 const int TP_RCV_MSG_DSTART =     22;  //
+const int TP_RCV_MSG_LIFTSENSE =  23;  //
+const int TP_RCV_MSG_JUMP =       24;  //
 
 // Block types.  Must be non-overlapping with TP_RCV_MSG_xxx
 const int TP_BLOCK_NULL     =    100;  // Must be greater than this
