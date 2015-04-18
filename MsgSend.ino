@@ -31,14 +31,12 @@ void sendMsg(int rType, int rVal) {
  *
  *********************************************************/
 void sendResponse() {
-  if (!isSerialDebug()) {  // Don't send to XBee if we are using the uart as a debug port.
-    set1Byte(sendArray, TP_RCV_X, x);
-    set1Byte(sendArray, TP_RCV_Y, y);
-    sendArray[TP_RCV_MSG_TYPE] = tpMsgRcvType;
-    set2Byte(sendArray, TP_RCV_MSG_VAL, tpMsgRcvVal);
-    sendTXFrame(XBEE_TWOPOTATOE, sendArray, TP_RCV_MAX);
-    tpMsgRcvType = TP_RCV_MSG_NULL;
-  }
+  set1Byte(sendArray, TP_RCV_X, x);
+  set1Byte(sendArray, TP_RCV_Y, y);
+  sendArray[TP_RCV_MSG_TYPE] = tpMsgRcvType;
+  set2Byte(sendArray, TP_RCV_MSG_VAL, tpMsgRcvVal);
+  sendTXFrame(XBEE_TWOPOTATOE, sendArray, TP_RCV_MAX);
+  tpMsgRcvType = TP_RCV_MSG_NULL;
 }
 
 
@@ -112,12 +110,12 @@ void sendFrame(byte cmdDataHeader[], int cmdDataHeaderLength, byte cmdData[], in
     }
   }
 
-  Serial.write(xbeeBuffer, oPtr);
+  Serial1.write(xbeeBuffer, oPtr);
   //flushChecksum();
 }
 
 //void flushChecksum() {
-//  Serial.write(transmitBuffer[transmitBufferLength]);
+//  Serial1.write(transmitBuffer[transmitBufferLength]);
 //}
 
 void set1Byte(byte array[], int offset, int value) {

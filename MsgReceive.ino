@@ -31,8 +31,8 @@ int dataPtr = 0;
 boolean readXBee() {
   static boolean escState = false;
 
-  while (Serial.available() > 0) {
-    byte b = Serial.read();
+  while (Serial1.available() > 0) {
+    byte b = Serial1.read();
 
     // Fix escape sequences
     if (packetInProgress != PACKET_DELIM) {
@@ -144,7 +144,7 @@ int doRx(int b) {
 
 /*********************************************************************
  *
- * newPacket()  ----New packet received from Serial.
+ * newPacket()  ----New packet received from Serial1.
  *
  ********************************************************************/
 void newPacket() {

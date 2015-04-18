@@ -1,16 +1,13 @@
 #include "Common.h"
-#include <SoftwareSerial.h>
-
-SoftwareSerial lcdSerial(12, 2); // RX, TX
 
 #define ULONG_MAX 4294967295L
 #define INT_MIN -32768
 
-const int PIN_SW3 = 3;   // Wh Shift key, lower left
-const int PIN_SW4 = 4;   // Gy unused
-const int PIN_SW5 = 5;   // Wh Debug
+const int PIN_SWA = 2;   // Ye Shift key, lower left
+const int PIN_SWB = 3;   // Gy unused (intermittent!)
+const int PIN_SW_SHIFT = 4;   // Wh Debug
 const int PIN_PWR = 11;
-const int PIN_LED = 13;
+const int PIN_LED_BD = 13;
 
 const int PIN_X = A0;     // Gn Joystick
 const int PIN_Y = A1;     // Bu Joystick
@@ -60,16 +57,18 @@ int tpMsgRcvVal = 0;
  *
  ****************************************************/
 void setup() {
-  pinMode(PIN_SW3, INPUT_PULLUP);
-  pinMode(PIN_SW4, INPUT_PULLUP);
-  pinMode(PIN_SW5, INPUT_PULLUP);
+  Serial1.begin(57600); // XBee
+  Serial.begin(115200); // XBee
+
+  pinMode(PIN_SWA, INPUT_PULLUP);
+  pinMode(PIN_SWB, INPUT_PULLUP);
+  pinMode(PIN_SW_SHIFT, INPUT_PULLUP);
   pinMode(PIN_PWR, OUTPUT);
-  pinMode(PIN_LED, OUTPUT);
-  digitalWrite(PIN_LED, HIGH);
+  pinMode(PIN_LED_BD, OUTPUT);
+  digitalWrite(PIN_LED_BD, HIGH);
   digitalWrite(PIN_PWR, HIGH);
 
   lcdInit();
-  Serial.begin(57600); //FTDI and XBee
 }
 
 /*****************************************************
@@ -81,7 +80,11 @@ void loop() {
   timeMilliseconds = millis();
   if (readXBee() || (timeMilliseconds > lcdUpdateTrigger)) { // true if we have just finished sending packet.
     lcdUpdate();
-    if (isSerialDebug()) serialDebugOut();
+Serial.print(digitalRead(PIN_SW_SHIFT));
+Serial.print("\t");
+Serial.print(readKey());
+Serial.print("\t");
+Serial.println(analogRead(PIN_VKEY));
   }
 
 
@@ -118,7 +121,7 @@ void checkJoystick() {
  * checkSwitches()
  ****************************************************/
 void checkSwitches() {
-  int shift = digitalRead(PIN_SW3);
+  int shift = digitalRead(PIN_SW_SHIFT);
   key = readKey();
   if ((key == oldKey) && (shift == oldShift)) {
     return;
@@ -134,7 +137,6 @@ void checkSwitches() {
   if (key != 13) {
     activeTime = timeMilliseconds;
   }
-debug1 = key;
   if (shift == HIGH) {  // Shift key not pressed
     switch (key) {
       case 1: // top row right
@@ -288,15 +290,4 @@ boolean toggle() {
   if (tg) tg = false;
   else tg = true;
   return tg;
-}
-
-// Check to see if the debug key is pressed.
-boolean isSerialDebug() {
-  if (digitalRead(PIN_SW5) == LOW) return true;
-  else return false;
-}
-
-void serialDebugOut() {
-  // Place any debug printing here
-  Serial.println(key);
 }
