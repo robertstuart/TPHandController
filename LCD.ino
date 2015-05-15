@@ -3,10 +3,11 @@ int tpBattVoltDisp = 0;
 int sonarDistanceDisp = 0;
 int yawDisp = 0;
 boolean isConnectedDisp = true;
-int debug1Disp = INT_MIN;
-int debug2Disp = INT_MIN;
+int debug1Disp = NO_DISP;
+int debug2Disp = NO_DISP;
 int tpStateDisp = 0;
-int tpModeDisp = MODE_UNKNOWN;
+int tpHeadingDisp = 0;
+int tpModeDisp = 0;
 int tpValSetDisp = 0;
 int tpBattDisp = 0;
 int hcBattDisp = 0;
@@ -83,48 +84,57 @@ void lcdInit() {
  *
  ****************************************************/
 void lcdUpdate() {
+  static int loop = 0;
+  loop = ++loop % 10;
   lcdUpdateTrigger = timeMilliseconds + 100;
+  
+  // The values in order of appearance.
   if (isConnectedDisp != isConnected) {
     updateConnected();
   }
-//  else if (sonarDistanceDisp != sonarDistance) {
-//    sonarDistanceDisp = sonarDistance;
-//    setFloatVal(15, 1, 3, sonarDistance, ""); //
-//  }
-//  else if (yawDisp != yaw) {
-//    yawDisp = yaw;
-//    setFloatVal(13, 2, 5, yaw, ""); //
-//  }
-//  else if (debug1Disp != debug1) {
-//    debug1Disp = debug1;
-//    setIntVal(0, 3, 6, debug1, " ");
-//  }
+  if (tpStateDisp != tpState) {
+    setState();
+  }
+  if (tpModeDisp != tpMode) {
+    setMode();
+  }
+  if (tpValSetDisp != tpValSet) {
+    setValSet();
+  }
+  if ((loop == 7) && (tpBattDisp != tpBatt)) {
+    tpBattDisp = tpBatt;
+    if (tpBatt == NO_DISP) return;
+    setBattPct(0, tpBatt, 0.75, "b");
+  }
+  else if (tpFpsDisp != tpFps) {
+    tpFpsDisp = tpFps;
+    setFloatVal(0, 1, 3, tpFps, "fps ");
+  }
+  else if (tpPitchDisp != tpPitch) {
+    char fill[] = {223, 0};
+    tpPitchDisp = tpPitch;
+    setFloatVal(8, 1, 4, tpPitch, fill); //º
+  }
+  if (sonarDistanceDisp != sonarDistance) {
+    sonarDistanceDisp = sonarDistance;
+    setFloatVal(0, 2, 4, sonarDistance, "ft"); //
+  }
+  if (tpHeadingDisp != tpHeading) {
+    char fill[] = {223, 0};
+    tpHeadingDisp = tpHeading;
+    setIntVal(8, 2, 5, tpHeading, fill); //
+  }
+  if (debug1Disp != debug1) {
+    debug1Disp = debug1;
+    setIntVal(13, 2, 6, debug1, " ");
+  }
 //  else if (debug2Disp != debug2) {
 //    debug2Disp = debug2;
 //    setIntVal(7, 3, 6, debug2, " ");
 //  }
-  else if (tpStateDisp != tpState) {
-    setState();
-  }
-  else if (tpModeDisp != tpMode) {
-    setMode();
-  }
-//  else if (tpValSetDisp != tpValSet) {
-//    setValSet();
-//  }
-  else if (tpBattDisp != tpBatt) {
-    tpBattDisp = tpBatt;
-    setBattPct(0, tpBatt, 0.75, "b", false);
-  }
-  else if (tpPitchDisp != tpPitch) {
-    setPitch();
-  }
-  else if (tpFpsDisp != tpFps) {
-    setFps();
-  }
-  else if (hcBattDisp != getHcBatt()) {
+  if ((loop == 2) && (hcBattDisp != getHcBatt())) {
     hcBattDisp = hcBatt;
-    setBattPct(3, hcBatt, 1.5, "h", true);
+    setBattPct(3, hcBatt, 1.5, "h");
   }
 }
 
@@ -133,8 +143,8 @@ void updateConnected() {
   if (!isConnected) {
     cursor(0, 0);
     Serial3.print("---No Connection----");
-    tpState = tpMode = tpValSet = tpFps = tpPitch = INT_MIN;
-    tpBatt = INT_MIN;
+    tpState = tpMode = tpValSet = tpFps = tpPitch = NO_DISP;
+    sonarDistance = tpBatt = tpHeadingDisp = NO_DISP;
   }
 }
 
@@ -142,137 +152,139 @@ void setState() {
   char* stateStr;
   tpStateDisp = tpState;
   cursor(0, 0);
-  if (tpState != INT_MIN) {
-    if (isStateBitSet(TP_STATE_RUNNING)) {
-      stateStr = "Run! ";
-    }
-    else if (isStateBitSet(TP_STATE_RUN_READY)) {
-      if (isStateBitClear(TP_STATE_UPRIGHT)) stateStr = "Fall ";
-      else stateStr = "Lift ";
-    }
-    else {
-      stateStr = "Idle ";
-    }  
-    Serial3.print(stateStr);
+  if (tpState == NO_DISP) return;
+  if (isStateBitSet(TP_STATE_ROUTE)) {
+    stateStr = "Route";
   }
+  else if (isStateBitSet(TP_STATE_RUNNING)) {
+    stateStr = "Run! ";
+  }
+  else if (isStateBitSet(TP_STATE_RUN_READY)) {
+    if (isStateBitClear(TP_STATE_UPRIGHT)) stateStr = "Fall ";
+    else stateStr = "Lift ";
+  }
+  else {
+    stateStr = "Idle ";
+  }  
+  Serial3.print(stateStr);
 }
 
 void setMode() {
   char* modeStr = "";
   tpModeDisp = tpMode;
-  if (tpMode != INT_MIN) {
-    cursor(5, 0);
-    switch (tpMode) {
-      case MODE_TP5:
-        modeStr = "TP5 ";
-        break;
-      case MODE_TP6:
-        modeStr = "TP6 ";
-        break;
-      default:
-        modeStr = "TP? ";
-        break;
+  cursor(5, 0);
+  switch (tpMode) {
+    case NO_DISP:
+      return;
+      break;
+    case MODE_TP5:
+      modeStr = "TP5 ";
+      break;
+    case MODE_TP6:
+      modeStr = "TP6 ";
+      break;
+    default:
+      modeStr = "TP? ";
+      break;
     }
-    Serial3.print(modeStr);
-  }
+  Serial3.print(modeStr);
 }
+
+
 
 void setValSet() {
   char* valSetStr = "";
   tpValSetDisp = tpValSet;
-  if (tpValSet != INT_MIN) {
-    cursor(9, 0);
-    switch (tpValSet) {
-      case 0:
-        valSetStr = "SetA    ";
-        break;
-      case 1:
-        valSetStr = "SetB    ";
-                 break;
-      case 2:
-        valSetStr = "SetC    ";
-                 break;
-      default:
-        valSetStr = "Set?    ";
-                 break;
-    }
-    Serial3.print(valSetStr);
+  cursor(9, 0);
+  switch (tpValSet) {
+    case NO_DISP:
+      return;
+      break;
+    case 0:
+      valSetStr = "SetA   ";
+      break;
+    case 1:
+      valSetStr = "SetB   ";
+      break;
+    case 2:
+      valSetStr = "SetC   ";
+      break;
+    default:
+      valSetStr = "Set?   ";
+      break;
   }
+  Serial3.print(valSetStr);
 }
 
-void setFps() {
-  tpFpsDisp = tpFps;
-  if (tpFps == INT_MIN) {
-    cursor(0, 1);
-    Serial3.print("        ");
-  }
-  else {
-    setFloatVal(0, 1, 3, tpFps, "fps ");
-  }
-}
+//
+//  tpFpsDisp = tpFps;
+//  setFloatVal(0, 1, 3, tpFps, "fps ");
+//
+//void setPitch() {
+//  char fill[] = {223, 32, 0};
+//  tpPitchDisp = tpPitch;
+//  setFloatVal(8, 1, 4, tpPitch, fill); //º
+//}
+//
 
-void setPitch() {
-  char fill[] = {223, 32, 0};
-  tpPitchDisp = tpPitch;
-  if (tpPitch == INT_MIN) {
-    cursor(8, 1);
-    Serial3.print("      ");
-  }
-  else {
-    setFloatVal(8, 1, 4, tpPitch, fill); //º
-  }
-}
 
+// width is width of place for number not including the trail
 void setIntVal(int x, int y, int width, int val, char* trail) {
-  char spaces[] = "          ";
+  char spaces[] = "              ";
   int spaceCount;
   cursor(x, y);
-  if (val >= 10000) spaceCount = 1;
-  else if (val >= 1000) spaceCount = 0;
-  else if (val >= 100) spaceCount = 1;
-  else if (val >= 10) spaceCount = 2;
-  else if (val >= 0) spaceCount = 3;
-  else if (val > -10) spaceCount = 2;
-  else if (val > -100) spaceCount = 1;
-  else if (val > -1000) spaceCount = 0;
-  else if (val > -10000) spaceCount = 0;
-  else spaceCount = 0;
-  spaceCount = (spaceCount - 4) + width;
-  if (spaceCount < 0) spaceCount = 0;
-  Serial3.write(spaces, spaceCount);
-  Serial3.print(val);
-  Serial3.print(trail);
-}
-
-// "val" is an int X 100
-void setFloatVal(int x, int y, int width, int val, char trail[]) {
-  char spaces[] = "          ";
-  int spaceCount;
-  float fVal = ((float) val) / 100.0; 
-  if (fVal >= 100.0) spaceCount = 1;        // 100.0 - 999.9
-  else if (fVal >= 10.0) spaceCount = 2;    //  10.0 -  99.0
-  else if (fVal >= 0.0) spaceCount = 3;     //   0.0 -   9.9
-  else if (fVal >= -9.9) spaceCount = 2;    //  -0.1 -  -9.9
-  else if (fVal >= -99.9) spaceCount = 1;   // -10.0 -  -99.9
-  else  spaceCount = 0;                     // -100.0 - -999.9
-  spaceCount = (spaceCount - 4) + width;
-  cursor(x, y);
-  Serial3.write(spaces, spaceCount);
-  float v = ((float) val) / 100.0;
-  Serial3.print(v, 1);
-  Serial3.print(trail);
-}
-
-void setBattPct(int y, int volt, float factor, char trail[], boolean clr) {
-  cursor(16, y);
-  if (volt == INT_MIN) {
-    if (clr) Serial3.print("    ");
+  if (val == NO_DISP) {
+    Serial3.write(spaces, width);
+    Serial3.write(spaces, strlen(trail));
   }
   else {
-    int newVolt = (int) (((float) volt) * factor);
-    float pct = getPct(newVolt);
-    setIntVal(16, y, 3, (int) pct, trail);
+    if (val >= 10000) spaceCount = 1;
+    else if (val >= 1000) spaceCount = 2;
+    else if (val >= 100) spaceCount = 3;
+    else if (val >= 10) spaceCount = 4;
+    else if (val >= 0) spaceCount = 5;
+    else if (val > -10) spaceCount = 4;
+    else if (val > -100) spaceCount = 3;
+    else if (val > -1000) spaceCount = 2;
+    else if (val > -10000) spaceCount = 1;
+    else spaceCount = 0;
+    spaceCount = (spaceCount - 5) + width;
+    if (spaceCount < 0) spaceCount = 0;
+    Serial3.write(spaces, spaceCount);
+    Serial3.print(val);
+    Serial3.print(trail);
   }
+}
+
+// "val" is an int X 100, width is number with. & sign but not trail.
+void setFloatVal(int x, int y, int width, int val, char trail[]) {
+  char spaces[] = "            ";
+  if (val == NO_DISP) {
+    Serial.write(spaces, width);
+    Serial.write(spaces, strlen(trail));
+  }
+  else {
+    int spaceCount;
+    float fVal = ((float) val) / 100.0; 
+    if (fVal >= 100.0) spaceCount = 1;        // 100.0 - 999.9
+    else if (fVal >= 10.0) spaceCount = 2;    //  10.0 -  99.0
+    else if (fVal >= 0.0) spaceCount = 3;     //   0.0 -   9.9
+    else if (fVal >= -9.9) spaceCount = 2;    //  -0.1 -  -9.9
+    else if (fVal >= -99.9) spaceCount = 1;   // -10.0 -  -99.9
+    else  spaceCount = 0;                     // -100.0 - -999.9
+    spaceCount = (spaceCount - 4) + width;
+    cursor(x, y);
+    Serial3.write(spaces, spaceCount);
+    float v = ((float) val) / 100.0;
+    Serial3.print(v, 1);
+    Serial3.print(trail);
+  }
+}
+
+void setBattPct(int y, int volt, float factor, char trail[]) {
+  int newVolt = (int) (((float) volt) * factor);
+  float pct = getPct(newVolt);
+  setIntVal(16, y, 2, (int) pct, trail);
 }
 
 int getHcBatt() {
@@ -355,7 +367,7 @@ void clearScreen() {
 
 void setSplash() {
   cursor(0, 0);
-  Serial3.print("     TwoPotatoe2    ");
+  Serial3.print("     TwoPotatoe     ");
   cursor(0, 1);
   Serial3.print("   Hand Controller  ");
   Serial3.write(124);

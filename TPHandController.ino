@@ -1,7 +1,7 @@
 #include "Common.h"
 
 #define ULONG_MAX 4294967295L
-#define INT_MIN -32768
+#define NO_DISP -32768
 
 const int PIN_SWA = 2;   // Ye Shift key, lower left
 const int PIN_SWB = 3;   // Gy unused (intermittent!)
@@ -17,6 +17,7 @@ const int PIN_VKEY = A3;  // Vi Vkey switches
 unsigned long tStart = 0;
 
 boolean lightState = false;
+boolean routeState = false;
 int key;
 int oldKey = 99;
 int oldShift = 99;
@@ -34,6 +35,7 @@ unsigned long msgTime = 0UL;
 // Values to be displayed
 boolean isConnected = true; // for proper startup
 float tpPitch = 0.0;
+int tpHeading = 0;
 float tpFps = 0.0;
 int tpState = 0;
 int hcBatt = 0;
@@ -58,7 +60,7 @@ int tpMsgRcvVal = 0;
  ****************************************************/
 void setup() {
   Serial1.begin(57600); // XBee
-  Serial.begin(115200); // XBee
+  Serial.begin(115200); // debug
 
   pinMode(PIN_SWA, INPUT_PULLUP);
   pinMode(PIN_SWB, INPUT_PULLUP);
@@ -80,18 +82,14 @@ void loop() {
   timeMilliseconds = millis();
   if (readXBee() || (timeMilliseconds > lcdUpdateTrigger)) { // true if we have just finished sending packet.
     lcdUpdate();
-Serial.print(digitalRead(PIN_SW_SHIFT));
-Serial.print("\t");
-Serial.print(readKey());
-Serial.print("\t");
-Serial.println(analogRead(PIN_VKEY));
   }
 
 
   checkJoystick();
   checkSwitches();
-  checkConnected();
   if (ledBlink()) {
+    checkConnected();
+    Serial.println(isConnected);
   }
   if ((timeMilliseconds - activeTime) > 300000) { // 5 minutes idle?
     powerDown();
@@ -140,23 +138,25 @@ void checkSwitches() {
   if (shift == HIGH) {  // Shift key not pressed
     switch (key) {
       case 1: // top row right
+        sendMsg(TP_RCV_MSG_ROTATE, 90);
         break;
       case 2: // top row middle
+        sendMsg(TP_RCV_MSG_ROTATE, -90);
         break;
       case 3: // top row left
         if (isStateBitSet(TP_STATE_RUN_READY))  sendMsg(TP_RCV_MSG_RUN_READY, 0);
         else sendMsg(TP_RCV_MSG_RUN_READY, 1); 
         break;
       case 4: // 2nd row right
+        sendMsg(TP_RCV_MSG_ROUTE_ES,0); // Route, end stand.
         break;
       case 5: // 2nd row middle
+        routeState = ! routeState;
+        sendMsg(TP_RCV_MSG_ROUTE, routeState);
         break;
       case 6: // 2nd row left
-        if (isStateBitSet(TP_STATE_LIFTSENSE))  sendMsg(TP_RCV_MSG_LIFTSENSE, 0);
-        else sendMsg(TP_RCV_MSG_LIFTSENSE, 1); 
         break;
       case 7: // 3rd row right
-        sendMsg(TP_RCV_MSG_JUMP,0);
         break;
       case 8: // 3rd row middle
         break;
@@ -179,11 +179,12 @@ void checkSwitches() {
   else {  // Shift key pressed.
     switch (key) {
       case 1:
+        sendMsg(TP_RCV_MSG_ROTATE, -178);
         break;
       case 2:
+        sendMsg(TP_RCV_MSG_ROTATE, 178);
         break;
       case 3:
-        sendMsg(TP_RCV_MSG_POWER,0);
         break;
       case 4:
         break;
@@ -193,6 +194,7 @@ void checkSwitches() {
         powerDown();
         break;
       case 7:
+        sendMsg(TP_RCV_MSG_RESET_NAV, 0);
         break;
       case 8:
         break;
@@ -263,14 +265,9 @@ int shiftState() {
 boolean ledBlink() {
   if (ledUpdateTrigger < timeMilliseconds) { // once/second
     ledUpdateTrigger = timeMilliseconds + 500;
-    if (digitalRead(PIN_LED) == HIGH) {
-      digitalWrite(PIN_LED, LOW);
-      return true;
-    }
-    else {
-      digitalWrite(PIN_LED, HIGH);
-      return true;
-    }
+    int i = (digitalRead(PIN_LED_BD) == HIGH) ? LOW : HIGH;
+    digitalWrite(PIN_LED_BD, i);
+    return true;
   }
   return false;
 } // end ledBlink()

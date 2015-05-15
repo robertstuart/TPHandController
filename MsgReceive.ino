@@ -149,8 +149,9 @@ int doRx(int b) {
  ********************************************************************/
 void newPacket() {
   msgTime = timeMilliseconds;
-//  yaw = get2Byte(packetByteArray, TP_SEND_YAW);
-//  sonarDistance = 999;//(int) (((float) get2Byte(packetByteArray, TP_SEND_SONAR)) * 2.9);
+  yaw = get2Byte(packetByteArray, TP_SEND_HEADING);
+  sonarDistance = (int) (((float) get2Byte(packetByteArray, TP_SEND_SONAR)) * 10.0);
+  tpHeading = (int) ((float) get2Byte(packetByteArray, TP_SEND_HEADING));
   int val = get2Byte(packetByteArray, TP_SEND_VALUE);
   switch (packetByteArray[TP_SEND_FLAG]) {
     case TP_SEND_FLAG_PITCH:
@@ -184,9 +185,10 @@ void newPacket() {
 }
 
 int get2Byte(byte array[], int index) {
-  int b1 = array[index];
-  int b2 = array[index + 1] & 0xFF;
-  return (b1 << 8) + b2;
+  byte b1 = array[index];
+  byte b2 = array[index + 1] & 0xFF;
+  short sum = (b1 << 8) + b2;
+  return (int) sum;
 }
 
 boolean isStateBitClear(byte b) {
