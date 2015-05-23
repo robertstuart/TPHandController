@@ -1,209 +1,78 @@
+const int B_BUFFER_SIZE = 100;
 
-const int PACKET_DELIM = 0;
-const int PACKET_MSB = 1;
-const int PACKET_LSB = 2;
-const int PACKET_API_ID = 3;
-const int PACKET_RX = 4;
-const int PACKET_MS = 5;
-const int PACKET_TXS = 6;
-int packetInProgress = PACKET_DELIM;
-const int PACKETBYTE_MAX = 105;
-byte packetByteArray[PACKETBYTE_MAX];
-int packetLength = 0;
-int dataLength = 0;
-int packetByteCount = 0;
-int packetSource;
-int signalStrength;
-int dataPtr = 0;
+char msgStrX[B_BUFFER_SIZE];
+int msgStrPtrX = 0;
+int msgCmdX = 0;
+boolean isMessageInProgressX = false;
 
 
-
-/*********************************************************************
- *
- * readXbee()
- *
- *   reads byte(s) from UART.  When the start of a new packet from
- *   a controller is received, the checksum is flushed (starting a
- *   new transmit) and true is returned indicating that the UART
- *   will be quiet before it starts receiving the next packet.
- *
- ********************************************************************/
-boolean readXBee() {
-  static boolean escState = false;
-
-  while (Serial1.available() > 0) {
+void readXBee() {
+  while (Serial1.available()) {
     byte b = Serial1.read();
-
-    // Fix escape sequences
-    if (packetInProgress != PACKET_DELIM) {
-      if (escState) {
-        b = b ^ 0x20;
-        escState = false;
-      }
-      else if (b == 0x7D) {
-        escState = true;
-        return false;
+    if (b >= 128) {
+      msgStrPtrX = 0;
+      msgCmdX = b;
+      isMessageInProgressX = true;
+    }
+    else {
+      if (isMessageInProgressX) {
+        if (msgStrPtrX >= B_BUFFER_SIZE) {
+          isMessageInProgressX = false;
+        } else if (b == 0) {
+          doMsg(msgCmdX, msgStrX, msgStrPtrX);
+        } 
+        else {
+          msgStrX[msgStrPtrX++] = b;
+        }
       }
     }
-
-    switch (packetInProgress) {
-      case PACKET_DELIM:
-        if (b == 0x7E) {
-          packetByteCount = 0;
-          packetInProgress = PACKET_MSB;
-          //        flushChecksum();
-          sendResponse();  // do reply
-        }
-        break;
-      case PACKET_MSB:
-        packetLength = b * 256;
-        packetInProgress = PACKET_LSB;
-        break;
-      case PACKET_LSB:
-        packetLength += b;
-        packetInProgress = PACKET_API_ID;
-        break;
-      case PACKET_API_ID:
-        switch (b) {
-          case 0x81:
-            packetInProgress = PACKET_RX;
-            break;
-          case 0x89:
-            packetInProgress = PACKET_TXS;
-            break;
-          case 0x8A:
-            packetInProgress = PACKET_MS;
-            break;
-          default:
-            packetInProgress = PACKET_DELIM;
-        }
-        break;
-      case PACKET_RX:
-        packetInProgress = doRx(b);
-        if (packetInProgress == PACKET_DELIM) {
-          return true;  // We have just received a complete packet.
-        }
-        break;
-      case PACKET_TXS:
-        packetInProgress = doTxs(b);
-        break;
-      case PACKET_MS:
-        packetInProgress = doMs(b);
-        break;
-    } // end switch(packetInProgress)
-  } // end while(dataReady)
-  return false;
-} // end readXBee()
-
-
-int doMs(int b) {
-  if (packetByteCount++ < 2) {
-    return PACKET_MS;
   }
-  return PACKET_DELIM;
 }
 
-int doTxs(int b) {
-  switch (packetByteCount++) {
-    case 0:
-      return PACKET_TXS;
-    case 1:
-      return PACKET_TXS;
-  }
-  return PACKET_DELIM;
-}
-
-// Data packet in progress
-int doRx(int b) {
-  switch (packetByteCount++) {
-    case 0:
-      packetSource = b * 256;
-      break;
-    case 1:
-      packetSource += b;
-      break;
-    case 2:
-      signalStrength = b;
-      break;
-    case 3: // Options
-      dataLength = packetLength - 5;  // Subtract out non-data bytes.
-      dataPtr = 0;
-      break;
-      // Data or checksum after this point.
-    default:
-      if (dataPtr == dataLength)	{ // Checksum?
-        newPacket();
-        return PACKET_DELIM;
-      }
-      else if (dataPtr <= 100) {
-        packetByteArray[dataPtr++] = (byte) b;
-      }
-  }
-  return PACKET_RX;
-} // end doRX()
-
-/*********************************************************************
- *
- * newPacket()  ----New packet received from Serial1.
- *
- ********************************************************************/
-void newPacket() {
+// returns true if a state message is received
+void doMsg(int cmd, char msgStr[], int count) {
+  int intVal;
+  float floatVal;
+  boolean booleanVal;
+  
+  msgStr[count] = 0;
   msgTime = timeMilliseconds;
-  yaw = get2Byte(packetByteArray, TP_SEND_HEADING);
-  sonarDistance = (int) (((float) get2Byte(packetByteArray, TP_SEND_SONAR)) * 10.0);
-  tpHeading = (int) ((float) get2Byte(packetByteArray, TP_SEND_HEADING));
-  int val = get2Byte(packetByteArray, TP_SEND_VALUE);
-  switch (packetByteArray[TP_SEND_FLAG]) {
-    case TP_SEND_FLAG_PITCH:
-      tpPitch = val;
+  switch (cmd) {
+    case SEND_FPS:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) tpFps = floatVal;
       break;
-    case  TP_SEND_FLAG_SPEED:
-      tpFps = val;
+    case SEND_PITCH:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) tpPitch = floatVal;
       break;
-    case  TP_SEND_FLAG_MODE:
-      tpMode = val;
+    case SEND_HEADING:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) tpHeading = floatVal;
       break;
-    case TP_SEND_FLAG_STATE:
-      tpState = val;
+    case SEND_SONAR:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) tpSonarDistance = floatVal;
       break;
-    case TP_SEND_FLAG_BATT:
-      tpBatt = val;
+    case SEND_ROUTE_STEP:
+      if (sscanf(msgStr, "%d", &intVal) > 0) tpRouteStep = intVal;
       break;
-    case TP_SEND_FLAG_VALSET:
-      tpValSet = val;
+    case SEND_MODE:
+      if (sscanf(msgStr, "%d", &intVal) > 0) tpMode = intVal;
       break;
-    case TP_SEND_FLAG_DEBUG:
-//      debug1 = val;
+    case SEND_BATT:
+      if (sscanf(msgStr, "%d", &intVal) > 0) tpBatt = intVal;
       break;
-    case TP_SEND_FLAG_DUMP:
-      //			mf.dataFile.doDataBlock(rcvArray);
+   case SEND_VALSET:
+      if (sscanf(msgStr, "%d", &intVal) > 0) tpValSet = intVal;
+      break;
+   case SEND_MESSAGE:
+      message = String(msgStr);
+      break;
+    case SEND_STATE:
+      if (sscanf(msgStr, "%d", &intVal) > 0) tpState = intVal;
+      updateAll(); // This should be the last message in a series.
       break;
     default:
-      //			System.out.println("Unknown flag byte received.");
+      Serial.println("Illegal message received: " + cmd);
       break;
+
   }
 }
-
-int get2Byte(byte array[], int index) {
-  byte b1 = array[index];
-  byte b2 = array[index + 1] & 0xFF;
-  short sum = (b1 << 8) + b2;
-  return (int) sum;
-}
-
-boolean isStateBitClear(byte b) {
-  return ((tpState & b) == 0);
-}
-boolean isStateBitSet(byte b) {
-  return ((tpState & b) != 0);
-}
-
-//int get4Byte(byte array[], int index) {
-//  long b1 = array[index];
-//  long b2 = array[index + 1] & 0xFF;
-//  long b3 = array[index + 2] & 0xFF;
-//  long b4 = array[index + 3] & 0xFF;
-//  return (b1 << 24) + (b2 << 16) + (b3 << 8) + b4;
-//}
-
 

@@ -3,8 +3,6 @@ int tpBattVoltDisp = 0;
 int sonarDistanceDisp = 0;
 int yawDisp = 0;
 boolean isConnectedDisp = true;
-int debug1Disp = NO_DISP;
-int debug2Disp = NO_DISP;
 int tpStateDisp = 0;
 int tpHeadingDisp = 0;
 int tpModeDisp = 0;
@@ -13,8 +11,7 @@ int tpBattDisp = 0;
 int hcBattDisp = 0;
 int tpPitchDisp = 0;
 int tpFpsDisp = 0;
-boolean tpLiftDisp = 0;
-
+String messageDisp = "";
 // Initialize the LCD screen
 void lcdInit() {
 //  if (digitalRead(PIN_SW1L) == LOW) { // need to reset things?
@@ -86,7 +83,6 @@ void lcdInit() {
 void lcdUpdate() {
   static int loop = 0;
   loop = ++loop % 10;
-  lcdUpdateTrigger = timeMilliseconds + 100;
   
   // The values in order of appearance.
   if (isConnectedDisp != isConnected) {
@@ -103,7 +99,7 @@ void lcdUpdate() {
   }
   if ((loop == 7) && (tpBattDisp != tpBatt)) {
     tpBattDisp = tpBatt;
-    if (tpBatt == NO_DISP) return;
+    if (tpBatt >= NO_DISP) return;
     setBattPct(0, tpBatt, 0.75, "b");
   }
   else if (tpFpsDisp != tpFps) {
@@ -115,26 +111,26 @@ void lcdUpdate() {
     tpPitchDisp = tpPitch;
     setFloatVal(8, 1, 4, tpPitch, fill); //º
   }
-  if (sonarDistanceDisp != sonarDistance) {
-    sonarDistanceDisp = sonarDistance;
-    setFloatVal(0, 2, 4, sonarDistance, "ft"); //
+  if (sonarDistanceDisp != tpSonarDistance) {
+    sonarDistanceDisp = tpSonarDistance;
+    setFloatVal(0, 2, 4, tpSonarDistance, "ft"); //
   }
   if (tpHeadingDisp != tpHeading) {
     char fill[] = {223, 0};
     tpHeadingDisp = tpHeading;
     setIntVal(8, 2, 5, tpHeading, fill); //
   }
-  if (debug1Disp != debug1) {
-    debug1Disp = debug1;
-    setIntVal(13, 2, 6, debug1, " ");
+  if (messageDisp != message) {
+    messageDisp = message;
+    String stringDisp = String(message);
+    stringDisp.concat("                     ");
+    stringDisp = stringDisp.substring(0,20);
+    cursor(0,3);
+    Serial3.print(stringDisp);
   }
-//  else if (debug2Disp != debug2) {
-//    debug2Disp = debug2;
-//    setIntVal(7, 3, 6, debug2, " ");
-//  }
   if ((loop == 2) && (hcBattDisp != getHcBatt())) {
     hcBattDisp = hcBatt;
-    setBattPct(3, hcBatt, 1.5, "h");
+    setBattPct(1, hcBatt, 1.5, "h");
   }
 }
 
@@ -143,8 +139,8 @@ void updateConnected() {
   if (!isConnected) {
     cursor(0, 0);
     Serial3.print("---No Connection----");
-    tpState = tpMode = tpValSet = tpFps = tpPitch = NO_DISP;
-    sonarDistance = tpBatt = tpHeadingDisp = NO_DISP;
+    tpState = tpMode = tpValSet = tpFps = tpPitch = NO_DISP + 1;
+    tpSonarDistance = tpBatt = tpHeadingDisp = NO_DISP + 1;
   }
 }
 
@@ -152,16 +148,16 @@ void setState() {
   char* stateStr;
   tpStateDisp = tpState;
   cursor(0, 0);
-  if (tpState == NO_DISP) return;
-  if (isStateBitSet(TP_STATE_ROUTE)) {
+  if (tpState >= NO_DISP) return;
+  if (isRouteInProgress) {
     stateStr = "Route";
   }
-  else if (isStateBitSet(TP_STATE_RUNNING)) {
+  else if (isRunning) {
     stateStr = "Run! ";
   }
-  else if (isStateBitSet(TP_STATE_RUN_READY)) {
-    if (isStateBitClear(TP_STATE_UPRIGHT)) stateStr = "Fall ";
-    else stateStr = "Lift ";
+  else if (isRunReady) {
+    if (isUpright) stateStr = "Lift ";
+    else stateStr = "Fall ";
   }
   else {
     stateStr = "Idle ";
@@ -173,59 +169,26 @@ void setMode() {
   char* modeStr = "";
   tpModeDisp = tpMode;
   cursor(5, 0);
-  switch (tpMode) {
-    case NO_DISP:
-      return;
-      break;
-    case MODE_TP5:
-      modeStr = "TP5 ";
-      break;
-    case MODE_TP6:
-      modeStr = "TP6 ";
-      break;
-    default:
-      modeStr = "TP? ";
-      break;
-    }
+  if (tpMode >= NO_DISP)      return;
+  else if (tpMode == MODE_TP6) modeStr = "TP6 ";
+  else                       modeStr = "TP? ";
   Serial3.print(modeStr);
 }
 
 
 
 void setValSet() {
-  char* valSetStr = "";
+  char* s = "";
   tpValSetDisp = tpValSet;
   cursor(9, 0);
-  switch (tpValSet) {
-    case NO_DISP:
-      return;
-      break;
-    case 0:
-      valSetStr = "SetA   ";
-      break;
-    case 1:
-      valSetStr = "SetB   ";
-      break;
-    case 2:
-      valSetStr = "SetC   ";
-      break;
-    default:
-      valSetStr = "Set?   ";
-      break;
-  }
-  Serial3.print(valSetStr);
+  if (tpValSet >= NO_DISP) return;
+  else if (tpValSet == 0)  s = "SetA   ";
+  else if (tpValSet == 1)  s = "SetB   ";
+  else if (tpValSet == 2)  s = "SetC   ";
+  else                     s = "Set?   ";
+  Serial3.print(s);
 }
 
-//
-//  tpFpsDisp = tpFps;
-//  setFloatVal(0, 1, 3, tpFps, "fps ");
-//
-//void setPitch() {
-//  char fill[] = {223, 32, 0};
-//  tpPitchDisp = tpPitch;
-//  setFloatVal(8, 1, 4, tpPitch, fill); //º
-//}
-//
 
 
 // width is width of place for number not including the trail
@@ -233,7 +196,7 @@ void setIntVal(int x, int y, int width, int val, char* trail) {
   char spaces[] = "              ";
   int spaceCount;
   cursor(x, y);
-  if (val == NO_DISP) {
+  if (val >= NO_DISP) {
     Serial3.write(spaces, width);
     Serial3.write(spaces, strlen(trail));
   }
@@ -257,9 +220,10 @@ void setIntVal(int x, int y, int width, int val, char* trail) {
 }
 
 // "val" is an int X 100, width is number with. & sign but not trail.
-void setFloatVal(int x, int y, int width, int val, char trail[]) {
+void setFloatVal(int x, int y, int width, float floatVal, char trail[]) {
+  int val = (int) (floatVal * 100.0);
   char spaces[] = "            ";
-  if (val == NO_DISP) {
+  if (val >= NO_DISP) {
     Serial.write(spaces, width);
     Serial.write(spaces, strlen(trail));
   }

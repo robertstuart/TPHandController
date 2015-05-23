@@ -1,7 +1,7 @@
 #include "Common.h"
 
 #define ULONG_MAX 4294967295L
-#define NO_DISP -32768
+#define NO_DISP 1000000
 
 const int PIN_SWA = 2;   // Ye Shift key, lower left
 const int PIN_SWB = 3;   // Gy unused (intermittent!)
@@ -22,35 +22,50 @@ int key;
 int oldKey = 99;
 int oldShift = 99;
 
-int x = 0;
-int y = 0;
+double joyX = 0.0;
+double joyY = 0.0;
 
 unsigned long activeTime = 0L;
 unsigned long timeMilliseconds = 0L;
-unsigned long lcdUpdateTrigger = 0L;
-unsigned long ledUpdateTrigger = 0L;
+unsigned long updateTrigger = 0L;
+unsigned long ledTrigger = 0L;
 unsigned long timeLowBatt = ULONG_MAX;
 unsigned long msgTime = 0UL;
+
+// State bits;
+boolean isDumping = false;
+boolean isRouteInProgress = false;
+boolean isPcActive = false;
+boolean isHcActive = false;
+boolean isOnGround = false;
+boolean isUpright = false;
+boolean isRunReady = false;
+boolean isRunning = false;
+boolean isHoldFps = false;
+boolean isHoldHeading = false;
+
+boolean isLightOn = false;
 
 // Values to be displayed
 boolean isConnected = true; // for proper startup
 float tpPitch = 0.0;
-int tpHeading = 0;
+float tpHeading = 0;
 float tpFps = 0.0;
 int tpState = 0;
+int stateInt = 0;
 int hcBatt = 0;
-int tpBatt = 0;
+float tpBatt = 0;
 int tpBattPct = 0;
 int hcBattPct = 0;
 int debug1 = 0; // Write to this to display value on row 4
 int debug2 = 0; // Write to this to display value on row 4
 int yaw = 12340;
-int sonarDistance = 5670;
+float tpSonarDistance = 0;
 int tpMode = MODE_TP5;
 int tpValSet = 99;
 int tpBattVolt = 0;
-int tpMsgRcvType = 0;
-int tpMsgRcvVal = 0;
+int tpRouteStep = 0;
+String message = "";
 
 
 /*****************************************************
@@ -76,25 +91,27 @@ void setup() {
 /*****************************************************
  *
  *    loop() 
- *
+ *    Whenever a SEND_STATE message is received, updateAll is called,
+ *    otherwise it is called 10x per sec.
  ****************************************************/
 void loop() {
   timeMilliseconds = millis();
-  if (readXBee() || (timeMilliseconds > lcdUpdateTrigger)) { // true if we have just finished sending packet.
-    lcdUpdate();
-  }
-
-
-  checkJoystick();
-  checkSwitches();
-  if (ledBlink()) {
-    checkConnected();
-    Serial.println(isConnected);
-  }
-  if ((timeMilliseconds - activeTime) > 300000) { // 5 minutes idle?
-    powerDown();
+  readXBee();
+  if (timeMilliseconds > updateTrigger) { 
+    updateAll();
   }
 }
+
+void updateAll() {
+  updateTrigger = timeMilliseconds + 100;
+  checkJoystick();
+  sendJoyXY();
+  checkSwitches();
+  checkConnected();
+  interpretState();
+  lcdUpdate();
+}
+
 
 /*****************************************************
  *
@@ -102,13 +119,13 @@ void loop() {
  *
  ****************************************************/
 void checkJoystick() {
-   const int JOY_ZERO = 15; // Range to treat a zero.
+   const int JOY_ZERO = 15; // Range to treat as zero.
   int a = analogRead(PIN_X);
   if ((a > (512 - JOY_ZERO)) && (a < (512 + JOY_ZERO))) a = 512;
-  x = (a -512) / 4; // scale to +- 128
+  joyX = ((float) (a -512)) / 512.0; // scale to +- 1.0
   int b = analogRead(PIN_Y);
   if ((b > (512 - JOY_ZERO)) && (b < (512 + JOY_ZERO))) b = 512;
-  y = ((b -512) / 4); // scale to +- 128
+  joyY = ((float) (b -512)) / 512.0; // scale to +- 1.0
   if ((a != 512) || (b != 512)) {
     activeTime = timeMilliseconds;
   }
@@ -119,6 +136,7 @@ void checkJoystick() {
  * checkSwitches()
  ****************************************************/
 void checkSwitches() {
+  int x = 0;
   int shift = digitalRead(PIN_SW_SHIFT);
   key = readKey();
   if ((key == oldKey) && (shift == oldShift)) {
@@ -138,21 +156,19 @@ void checkSwitches() {
   if (shift == HIGH) {  // Shift key not pressed
     switch (key) {
       case 1: // top row right
-        sendMsg(TP_RCV_MSG_ROTATE, 90);
+        sendXMsg(RCV_ROTATE, 90);
         break;
       case 2: // top row middle
-        sendMsg(TP_RCV_MSG_ROTATE, -90);
+        sendXMsg(RCV_ROTATE, -90);
         break;
       case 3: // top row left
-        if (isStateBitSet(TP_STATE_RUN_READY))  sendMsg(TP_RCV_MSG_RUN_READY, 0);
-        else sendMsg(TP_RCV_MSG_RUN_READY, 1); 
-        break;
+        sendXMsg(RCV_RUN, (isRunReady) ? 0 : 1);
+       break;
       case 4: // 2nd row right
-        sendMsg(TP_RCV_MSG_ROUTE_ES,0); // Route, end stand.
+        sendXMsg(RCV_ROUTE_ES, 0); // Route, end stand.
         break;
       case 5: // 2nd row middle
-        routeState = ! routeState;
-        sendMsg(TP_RCV_MSG_ROUTE, routeState);
+        sendXMsg(RCV_ROUTE, (isRouteInProgress) ? 0 : 1);
         break;
       case 6: // 2nd row left
         break;
@@ -163,12 +179,11 @@ void checkSwitches() {
       case 9: // 3rd row right
         break;
       case 10: // 4th row right
-        if (lightState) sendMsg(TP_RCV_MSG_LIGHTS, 7); // All lights on
-        else sendMsg(TP_RCV_MSG_LIGHTS, 0); // All lights off
-        lightState = ! lightState;
+        isLightOn = !isLightOn;
+        sendXMsg(RCV_LIGHTS, (isLightOn) ? 1 : 0); 
         break;
       case 11: // 4th row middle
-        sendMsg(TP_RCV_MSG_DSTART,0); // Dump data
+        sendXMsg(RCV_DUMP_START, 0); // Dump data
         break;
       case 12: // 4th row left
         break;
@@ -179,10 +194,10 @@ void checkSwitches() {
   else {  // Shift key pressed.
     switch (key) {
       case 1:
-        sendMsg(TP_RCV_MSG_ROTATE, -178);
+        sendXMsg(RCV_ROTATE, -178);
         break;
       case 2:
-        sendMsg(TP_RCV_MSG_ROTATE, 178);
+        sendXMsg(RCV_ROTATE, 178);
         break;
       case 3:
         break;
@@ -194,19 +209,17 @@ void checkSwitches() {
         powerDown();
         break;
       case 7:
-        sendMsg(TP_RCV_MSG_RESET_NAV, 0);
+        sendXMsg(RCV_RESET_NAV, 0);
         break;
       case 8:
         break;
       case 9:
-        sendMsg(TP_RCV_MSG_MODE, MODE_TP5);
         break;
       case 10:
         break;
       case 11:
         break;
       case 12:
-        sendMsg(TP_RCV_MSG_MODE, MODE_TP6);
         break;
       default:   
         break;   
@@ -224,52 +237,13 @@ void powerDown() {
   Serial.println("PowerDown");
 }
 
-/*****************************************************
- *
- *    switchState() 
- *
- ****************************************************/
-int switchState(int switchPin) {
-//  int sState = digitalRead(switchPin);
-//  if (sState != switchStates[switchPin]) {
-//    switchStates[switchPin] = sState;
-//    oldSwitchStates[switchPin] = sState;
-//    if (sState == LOW) {
-//      return SW_CLICKED;
-//    }
-//    else {
-//      return SW_UNCLICKED;
-//    }
-//  }
-//  if (sState == LOW) {
-//    return SW_SELECTED;
-//  }
-//  return SW_UNSELECTED;
-}
 
-int shiftState() {
-//  int ctrl = switchState(PIN_SW4L);
-//  int alt = switchState(PIN_SW4R);
-//  if ((ctrl <= SW_CLICKED) && (alt <= SW_CLICKED)) {
-//    return SW_ALT_CTRL;
-//  }
-//  else if (ctrl <= SW_CLICKED) {
-//    return SW_CTRL;
-//  }
-//  else if (alt <= SW_CLICKED) {
-//    return SW_ALT;
-//  }
-//  return SW_UNSHIFTED;
-}
 
-boolean ledBlink() {
-  if (ledUpdateTrigger < timeMilliseconds) { // once/second
-    ledUpdateTrigger = timeMilliseconds + 500;
-    int i = (digitalRead(PIN_LED_BD) == HIGH) ? LOW : HIGH;
-    digitalWrite(PIN_LED_BD, i);
-    return true;
+void ledBlink() {
+  if (ledTrigger < timeMilliseconds) { // once/second
+    ledTrigger = timeMilliseconds + 500;
+    digitalWrite(PIN_LED_BD, !digitalRead(PIN_LED_BD));
   }
-  return false;
 } // end ledBlink()
 
 void checkConnected() {
@@ -281,10 +255,26 @@ void checkConnected() {
   }
 }
 
-// Toggle the value so tp knows it is a new message.
-boolean toggle() {
-  static boolean tg = false;
-  if (tg) tg = false;
-  else tg = true;
-  return tg;
+
+// better to do by parsing string? or division & modulus?
+void interpretState() {
+  stateInt          = tpState;
+  isHoldFps         = stateBit(512);
+  isHoldHeading     = stateBit(256);
+  isDumping         = stateBit(128);
+  isRouteInProgress = stateBit(64);
+  isPcActive        = stateBit(32);
+  isHcActive        = stateBit(16);
+  isOnGround        = stateBit(8);
+  isUpright         = stateBit(4);
+  isRunReady        = stateBit(2);
+  isRunning         = stateBit(1);
+}
+
+boolean stateBit(int factor) {
+  if (stateInt >= factor) {
+    stateInt -= factor;
+    return true;
+  }
+  return false;
 }
