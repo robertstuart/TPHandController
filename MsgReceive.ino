@@ -9,6 +9,7 @@ boolean isMessageInProgressX = false;
 void readXBee() {
   while (Serial1.available()) {
     byte b = Serial1.read();
+ Serial.println(b);
     if (b >= 128) {
       msgStrPtrX = 0;
       msgCmdX = b;
@@ -68,6 +69,15 @@ void doMsg(int cmd, char msgStr[], int count) {
     case SEND_STATE:
       if (sscanf(msgStr, "%d", &intVal) > 0) tpState = intVal;
       updateAll(); // This should be the last message in a series.
+      break;
+    case SEND_ROUTE_NAME:
+      message = String(msgStr);
+      break;
+    case SEND_X:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) tpX = String(msgStr);
+      break;
+    case SEND_Y:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) tpY = String(msgStr);
       break;
     default:
       Serial.println("Illegal message received: " + cmd);

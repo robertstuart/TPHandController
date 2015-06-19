@@ -43,6 +43,8 @@ boolean isRunReady = false;
 boolean isRunning = false;
 boolean isHoldFps = false;
 boolean isHoldHeading = false;
+boolean isGyroSteer = false;
+boolean isStand = false;
 
 boolean isLightOn = false;
 
@@ -57,6 +59,8 @@ int hcBatt = 0;
 float tpBatt = 0;
 int tpBattPct = 0;
 int hcBattPct = 0;
+String tpX = String("12.34");
+String tpY = String("12.34");
 int debug1 = 0; // Write to this to display value on row 4
 int debug2 = 0; // Write to this to display value on row 4
 int yaw = 12340;
@@ -165,18 +169,22 @@ void checkSwitches() {
         sendXMsg(RCV_RUN, (isRunReady) ? 0 : 1);
        break;
       case 4: // 2nd row right
-        sendXMsg(RCV_ROUTE_ES, 0); // Route, end stand.
+        sendXMsg(RCV_HOLD_FPS, (isHoldFps ? 0 : 1));
         break;
       case 5: // 2nd row middle
-        sendXMsg(RCV_ROUTE, (isRouteInProgress) ? 0 : 1);
+        sendXMsg(RCV_STAND, isStand ? 0 : 1);
         break;
       case 6: // 2nd row left
+        sendXMsg(RCV_ROUTE, (isRouteInProgress ? 0 : 1));
         break;
       case 7: // 3rd row right
+        sendXMsg(RCV_HOLD_HEADING, (isHoldHeading ? 0 : 1));
         break;
       case 8: // 3rd row middle
+        sendXMsg(RCV_GYRO_STEER, (isGyroSteer ? 0 : 1));
         break;
-      case 9: // 3rd row right
+      case 9: // 3rd row Left,  
+        sendXMsg(RCV_ROUTE_ES, 0); // Route, end stand.
         break;
       case 10: // 4th row right
         isLightOn = !isLightOn;
@@ -186,6 +194,7 @@ void checkSwitches() {
         sendXMsg(RCV_DUMP_START, 0); // Dump data
         break;
       case 12: // 4th row left
+        sendXMsg(RCV_RESET_NAV, 0);
         break;
       default: 
         break;     
@@ -193,33 +202,35 @@ void checkSwitches() {
   } 
   else {  // Shift key pressed.
     switch (key) {
-      case 1:
+      case 1:  // top row right
         sendXMsg(RCV_ROTATE, -178);
         break;
-      case 2:
+      case 2: // top row middle
         sendXMsg(RCV_ROTATE, 178);
         break;
-      case 3:
+      case 3: // top row left
         break;
-      case 4:
+      case 4: // 2nd row right
         break;
-      case 5:
+      case 5: // 2nd row middle 
+        sendXMsg(RCV_ZERO_GYRO, 0); // Zero gyro for drift
         break;
-      case 6:
+      case 6: // 2nd row left
         powerDown();
         break;
-      case 7:
-        sendXMsg(RCV_RESET_NAV, 0);
+      case 7: // 3rd row right
         break;
-      case 8:
+      case 8: // 3rd row middle
         break;
-      case 9:
+      case 9: // 3rd row Left
+        sendXMsg(RCV_SET_ROUTE, 1); // Increment route
         break;
-      case 10:
+      case 10: // 4th row right
         break;
-      case 11:
+      case 11: // 4th row middle
         break;
-      case 12:
+      case 12: // 4th row left
+        sendXMsg(RCV_SET_ROUTE, 0); // Decrement route
         break;
       default:   
         break;   
@@ -259,6 +270,8 @@ void checkConnected() {
 // better to do by parsing string? or division & modulus?
 void interpretState() {
   stateInt          = tpState;
+  isStand           = stateBit(2048);
+  isGyroSteer       = stateBit(1024);
   isHoldFps         = stateBit(512);
   isHoldHeading     = stateBit(256);
   isDumping         = stateBit(128);

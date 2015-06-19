@@ -10,8 +10,13 @@ int tpValSetDisp = 0;
 int tpBattDisp = 0;
 int hcBattDisp = 0;
 int tpPitchDisp = 0;
-int tpFpsDisp = 0;
+float tpFpsDisp = 0.0;
+String tpXDisp = String("");
+String tpYDisp = String("");
+
 String messageDisp = "";
+String spacex = String("                    ");
+
 // Initialize the LCD screen
 void lcdInit() {
 //  if (digitalRead(PIN_SW1L) == LOW) { // need to reset things?
@@ -91,42 +96,52 @@ void lcdUpdate() {
   if (tpStateDisp != tpState) {
     setState();
   }
-  if (tpModeDisp != tpMode) {
-    setMode();
+//  if (tpModeDisp != tpMode) {
+//    setMode();
+//  }
+//  if (tpValSetDisp != tpValSet) {
+//    setValSet();
+//  }
+  if (!tpX.equals(tpXDisp)) {
+    tpXDisp = tpX;
+    setString(8, 0, 7, tpX, String("X"));
+//    setFloatVal(9, 0, , tpX, "X"); //
   }
-  if (tpValSetDisp != tpValSet) {
-    setValSet();
+  if (!tpY.equals(tpYDisp)) {
+    tpYDisp = tpY;
+    setString(8, 1, 7, tpY, String("Y"));
   }
   if ((loop == 7) && (tpBattDisp != tpBatt)) {
     tpBattDisp = tpBatt;
     if (tpBatt >= NO_DISP) return;
-    setBattPct(0, tpBatt, 0.75, "b");
-  }
-  else if (tpFpsDisp != tpFps) {
-    tpFpsDisp = tpFps;
-    setFloatVal(0, 1, 3, tpFps, "fps ");
-  }
-  else if (tpPitchDisp != tpPitch) {
-    char fill[] = {223, 0};
-    tpPitchDisp = tpPitch;
-    setFloatVal(8, 1, 4, tpPitch, fill); //º
+    if  (tpBatt > 1700) setBattPct(0, tpBatt, 0.6, "b"); // 5 cells
+    else setBattPct(0, tpBatt, 0.75, "b");               // 4 cells
   }
   if (sonarDistanceDisp != tpSonarDistance) {
     sonarDistanceDisp = tpSonarDistance;
     setFloatVal(0, 2, 4, tpSonarDistance, "ft"); //
   }
+  if (tpFpsDisp != tpFps) {
+    tpFpsDisp = tpFps;
+    setFloatVal(0, 1, 3, tpFps, "fps ");
+  }
+//  else if (tpPitchDisp != tpPitch) {
+//    char fill[] = {223, 0};
+//    tpPitchDisp = tpPitch;
+//    setFloatVal(8, 1, 4, tpPitch, fill); //º
+//  }
   if (tpHeadingDisp != tpHeading) {
     char fill[] = {223, 0};
     tpHeadingDisp = tpHeading;
     setIntVal(8, 2, 5, tpHeading, fill); //
   }
-  if (messageDisp != message) {
+  if (!messageDisp.equals(message)) {
     messageDisp = message;
-    String stringDisp = String(message);
-    stringDisp.concat("                     ");
-    stringDisp = stringDisp.substring(0,20);
+    String tmpStr = String(message);
+    tmpStr.concat(spacex);
+    tmpStr = tmpStr.substring(0,20);
     cursor(0,3);
-    Serial3.print(stringDisp);
+    Serial3.print(tmpStr);
   }
   if ((loop == 2) && (hcBattDisp != getHcBatt())) {
     hcBattDisp = hcBatt;
@@ -189,6 +204,15 @@ void setValSet() {
   Serial3.print(s);
 }
 
+void setString(int x, int y, int width, String s, String append) {
+  cursor(x,y);
+  String tmpStr = String(spacex);
+  tmpStr.concat(s);
+  int len = tmpStr.length();
+  tmpStr = tmpStr.substring(len - width, len);
+  Serial3.print(tmpStr);
+  Serial3.print(append);
+}
 
 
 // width is width of place for number not including the trail
