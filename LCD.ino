@@ -1,21 +1,25 @@
 unsigned int updateRow = 0;
-int tpBattVoltDisp = 0;
-int sonarDistanceDisp = 0;
-int yawDisp = 0;
-boolean isConnectedDisp = true;
-int tpStateDisp = 0;
-int tpHeadingDisp = 0;
-int tpModeDisp = 0;
-int tpValSetDisp = 0;
-int tpBattDisp = 0;
-int hcBattDisp = 0;
-int tpPitchDisp = 0;
-float tpFpsDisp = 0.0;
-String tpXDisp = String("");
-String tpYDisp = String("");
+float hcBattDisp = 0;
+float p2BattDisp = 0;
+float p3ABattDisp = 0;
+float p3BBattDisp = 0;
+float sonarDistanceRDisp = 0;
+float sonarDistanceLDisp = 0;
+boolean is2ConnectedDisp = true;
+boolean is3ConnectedDisp = true;
+int p2StateDisp = 0;
+float p3StateDisp = 0;
+float p2HeadingDisp = 0;
+float p2FpsDisp = 0.0;
+float p3FpsDisp = 0.0;
 
-String messageDisp = "";
+unsigned int p2MessageTrigger = 0;
+unsigned int p3MessageTrigger = 0;
+
+String p2MessageDisp = "";
+String p3MessageDisp = "";
 String spacex = String("                    ");
+char numBuf[] = "           ";
 
 // Initialize the LCD screen
 void lcdInit() {
@@ -77,132 +81,150 @@ void lcdInit() {
 
 
 /*****************************************************
- *
  *    lcdUpdate()
- *
- *         Only called during "idle" periods so the
- *         SoftwareSerial does not interfere with
- *         activity on the UART.
- *
  ****************************************************/
 void lcdUpdate() {
   static int loop = 0;
   loop = ++loop % 10;
-  
-  // The values in order of appearance.
-  if (isConnectedDisp != isConnected) {
-    updateConnected();
+
+  // Connections & State
+  if (is2ConnectedDisp != is2Connected) {
+    is2ConnectedDisp = is2Connected;
+    if (!is2Connected) {
+      cursor(0, 0);
+      Serial3.print("---No Connection----");
+    }
   }
-  if (tpStateDisp != tpState) {
-    setState();
+  if (p2StateDisp != p2State) {
+    set2State();
   }
-//  if (tpModeDisp != tpMode) {
-//    setMode();
-//  }
-//  if (tpValSetDisp != tpValSet) {
-//    setValSet();
-//  }
-  if (!tpX.equals(tpXDisp)) {
-    tpXDisp = tpX;
-    setString(8, 0, 7, tpX, String("X"));
-//    setFloatVal(9, 0, , tpX, "X"); //
+  if (is3ConnectedDisp != is3Connected) {
+    is3ConnectedDisp = is3Connected;
+    if (!is3Connected) {
+      cursor(0, 2);
+      Serial3.print("---No Connection----");
+    }
   }
-  if (!tpY.equals(tpYDisp)) {
-    tpYDisp = tpY;
-    setString(8, 1, 7, tpY, String("Y"));
+  if (p3StateDisp != p3State) {
+    set3State();
   }
-  if ((loop == 7) && (tpBattDisp != tpBatt)) {
-    tpBattDisp = tpBatt;
-    if (tpBatt >= NO_DISP) return;
-    if  (tpBatt > 1700) setBattPct(0, tpBatt, 0.6, "b"); // 5 cells
-    else setBattPct(0, tpBatt, 0.75, "b");               // 4 cells
+
+  // Speed
+  if (p2FpsDisp != p2Fps) {
+    if (timeMilliseconds > p2MessageTrigger) {
+      p2FpsDisp = p2Fps;
+      snprintf(numBuf, 6, "%5.1f", p2Fps);
+      cursor(0, 1);
+      Serial3.print(numBuf);
+      Serial3.print("fps  ");
+    }
   }
-  if (sonarDistanceDisp != tpSonarDistance) {
-    sonarDistanceDisp = tpSonarDistance;
-    setFloatVal(0, 2, 4, tpSonarDistance, "ft"); //
+  if (p3FpsDisp != p3Fps) {
+    if (timeMilliseconds > p3MessageTrigger) {
+      p3FpsDisp = p3Fps;
+      snprintf(numBuf, 6, "%5.1f", p3Fps);
+      cursor(0, 3);
+      Serial3.print(numBuf);
+      Serial3.print("fps  ");
+    }
   }
-  if (tpFpsDisp != tpFps) {
-    tpFpsDisp = tpFps;
-    setFloatVal(0, 1, 3, tpFps, "fps ");
+
+  // Sonar
+  if (sonarDistanceLDisp != p2SonarDistanceL) {
+    sonarDistanceLDisp = p2SonarDistanceL;
+    snprintf(numBuf, 5, "%4.1f", p2SonarDistanceL);
+    cursor(6, 0);
+    Serial3.print(numBuf); 
+    Serial3.print("  ");
   }
-//  else if (tpPitchDisp != tpPitch) {
-//    char fill[] = {223, 0};
-//    tpPitchDisp = tpPitch;
-//    setFloatVal(8, 1, 4, tpPitch, fill); //º
-//  }
-  if (tpHeadingDisp != tpHeading) {
-    char fill[] = {223, 0};
-    tpHeadingDisp = tpHeading;
-    setIntVal(8, 2, 5, tpHeading, fill); //
+  if (sonarDistanceRDisp != p2SonarDistanceR) {
+    sonarDistanceRDisp = p2SonarDistanceR;
+    snprintf(numBuf, 5, "%4.1f", p2SonarDistanceR);
+    cursor(11, 0);
+    Serial3.print(numBuf); 
+    Serial3.print("  ");
   }
-  if (!messageDisp.equals(message)) {
-    messageDisp = message;
-    String tmpStr = String(message);
+
+  // Messages
+  if (!p2MessageDisp.equals(p2Message)) {
+    p2MessageDisp = p2Message;
+    String tmpStr = String(p2Message);
+    tmpStr.concat(spacex);
+    tmpStr = tmpStr.substring(0,20);
+    cursor(0,1);
+    Serial3.print(tmpStr);
+    p2MessageTrigger = timeMilliseconds + 10000;
+  }
+  if (!p3MessageDisp.equals(p3Message)) {
+    p3MessageDisp = p3Message;
+    String tmpStr = String(p3Message);
     tmpStr.concat(spacex);
     tmpStr = tmpStr.substring(0,20);
     cursor(0,3);
     Serial3.print(tmpStr);
+    p3MessageTrigger = timeMilliseconds + 10000;
   }
-  if ((loop == 2) && (hcBattDisp != getHcBatt())) {
+
+  // Heading
+  if (p2HeadingDisp != p2Heading) {
+    static char fill[] = {223, 0};
+    if (timeMilliseconds > p2MessageTrigger) {
+      p2HeadingDisp = p2Heading;
+      snprintf(numBuf, 5, "%4d", (int) p2Heading);
+      cursor(11, 1);
+      Serial3.print(numBuf);
+      Serial3.print(fill);
+    }
+  }
+
+  // Batteries
+  if ((loop == 5) && (hcBattDisp != getHcBatt())) {
     hcBattDisp = hcBatt;
-    setBattPct(1, hcBatt, 1.5, "h");
+    setBattPct(0, hcBatt, 2, "h");
+  }
+  if (p2BattDisp != p2Batt) {
+    p2BattDisp = p2Batt;
+    setBattPct(1, p2Batt, 5, "b"); // 5 cells
+  }
+  if (p3ABattDisp != p3ABatt) {
+    p3ABattDisp = p3ABatt;
+    setBattPct(2, p3ABatt, 2, "a");
+  }
+  if (p3BBattDisp != p3BBatt) {
+    p3BBattDisp = p3BBatt;
+    setBattPct(3, p3BBatt, 10, "b");
   }
 }
 
-void updateConnected() {
-  isConnectedDisp = isConnected;
-  if (!isConnected) {
-    cursor(0, 0);
-    Serial3.print("---No Connection----");
-    tpState = tpMode = tpValSet = tpFps = tpPitch = NO_DISP + 1;
-    tpSonarDistance = tpBatt = tpHeadingDisp = NO_DISP + 1;
-  }
-}
 
-void setState() {
+void set2State() {
   char* stateStr;
-  tpStateDisp = tpState;
+  p2StateDisp = p2State;
   cursor(0, 0);
-  if (tpState >= NO_DISP) return;
-  if (isRouteInProgress) {
+  if (is2RouteInProgress) {
     stateStr = "Route";
-  }
-  else if (isRunning) {
+  } else if (is2Running) {
     stateStr = "Run! ";
-  }
-  else if (isRunReady) {
-    if (isUpright) stateStr = "Lift ";
+  } else if (is2RunReady) {
+    if (is2Upright) stateStr = "Lift ";
     else stateStr = "Fall ";
-  }
-  else {
+  } else {
     stateStr = "Idle ";
   }  
   Serial3.print(stateStr);
 }
 
-void setMode() {
-  char* modeStr = "";
-  tpModeDisp = tpMode;
-  cursor(5, 0);
-  if (tpMode >= NO_DISP)      return;
-  else if (tpMode == MODE_TP6) modeStr = "TP6 ";
-  else                       modeStr = "TP? ";
-  Serial3.print(modeStr);
+void set3State() {
+  char* stateStr;
+  p3StateDisp = p3State;
+  cursor(0, 2);
+  if (is3RouteInProgress) {
+    stateStr = "Route";
+  } else if (is3RunReady) stateStr = "Run!             ";
+  else stateStr =            "Idle             ";  
+  Serial3.print(stateStr);
 }
 
-
-
-void setValSet() {
-  char* s = "";
-  tpValSetDisp = tpValSet;
-  cursor(9, 0);
-  if (tpValSet >= NO_DISP) return;
-  else if (tpValSet == 0)  s = "SetA   ";
-  else if (tpValSet == 1)  s = "SetB   ";
-  else if (tpValSet == 2)  s = "SetC   ";
-  else                     s = "Set?   ";
-  Serial3.print(s);
-}
 
 void setString(int x, int y, int width, String s, String append) {
   cursor(x,y);
@@ -215,98 +237,44 @@ void setString(int x, int y, int width, String s, String append) {
 }
 
 
-// width is width of place for number not including the trail
-void setIntVal(int x, int y, int width, int val, char* trail) {
-  char spaces[] = "              ";
-  int spaceCount;
-  cursor(x, y);
-  if (val >= NO_DISP) {
-    Serial3.write(spaces, width);
-    Serial3.write(spaces, strlen(trail));
-  }
-  else {
-    if (val >= 10000) spaceCount = 1;
-    else if (val >= 1000) spaceCount = 2;
-    else if (val >= 100) spaceCount = 3;
-    else if (val >= 10) spaceCount = 4;
-    else if (val >= 0) spaceCount = 5;
-    else if (val > -10) spaceCount = 4;
-    else if (val > -100) spaceCount = 3;
-    else if (val > -1000) spaceCount = 2;
-    else if (val > -10000) spaceCount = 1;
-    else spaceCount = 0;
-    spaceCount = (spaceCount - 5) + width;
-    if (spaceCount < 0) spaceCount = 0;
-    Serial3.write(spaces, spaceCount);
-    Serial3.print(val);
-    Serial3.print(trail);
-  }
-}
 
-// "val" is an int X 100, width is number with. & sign but not trail.
-void setFloatVal(int x, int y, int width, float floatVal, char trail[]) {
-  int val = (int) (floatVal * 100.0);
-  char spaces[] = "            ";
-  if (val >= NO_DISP) {
-    Serial.write(spaces, width);
-    Serial.write(spaces, strlen(trail));
-  }
-  else {
-    int spaceCount;
-    float fVal = ((float) val) / 100.0; 
-    if (fVal >= 100.0) spaceCount = 1;        // 100.0 - 999.9
-    else if (fVal >= 10.0) spaceCount = 2;    //  10.0 -  99.0
-    else if (fVal >= 0.0) spaceCount = 3;     //   0.0 -   9.9
-    else if (fVal >= -9.9) spaceCount = 2;    //  -0.1 -  -9.9
-    else if (fVal >= -99.9) spaceCount = 1;   // -10.0 -  -99.9
-    else  spaceCount = 0;                     // -100.0 - -999.9
-    spaceCount = (spaceCount - 4) + width;
-    cursor(x, y);
-    Serial3.write(spaces, spaceCount);
-    float v = ((float) val) / 100.0;
-    Serial3.print(v, 1);
-    Serial3.print(trail);
-  }
-}
-
-void setBattPct(int y, int volt, float factor, char trail[]) {
-  int newVolt = (int) (((float) volt) * factor);
+void setBattPct(int y, float volt, int cells, char trail[]) {
+  float newVolt =  volt / ((float) cells);
   float pct = getPct(newVolt);
-  setIntVal(16, y, 2, (int) pct, trail);
+  cursor(17, y);
+  snprintf(numBuf, 3, "%02d", (int) pct);
+  Serial3.print(numBuf);
+  Serial3.print(trail);
+//  setIntVal(1, y, 2, (int) pct, trail);
 }
 
-int getHcBatt() {
-  int a = analogRead(PIN_BATT);
-  hcBatt = (int) ((1000L * a) / 1120L);
+float getHcBatt() {
+  float a = (float) analogRead(PIN_BATT);
+  hcBatt = a * 0.00911;
+Serial.println(hcBatt);
   return hcBatt;
 }
 
-float tpVolt[] = {
-  12.6f, 11.99f, 11.75f, 11.54f, 11.23f, 11.05f, 10.83f, 10.63f, 10.35f, 9.0f
+float battVolt[] = {
+ 4.2f, 4.0f, 3.92f, 3.85f, 3.74f, 3.68f, 3.61f, 3.54f, 3.45f, 3.0f
 };
-float tpPct[] =  {
-  100.0f, 83.0f,  71.0f,  60.0f,  34.0f,  20.0f,  07.0f,  05.0f,  03.0f,  0.0f
-};
-float localVolt[] = {
-  8.4f,  8.09f, 7.57f, 7.34f, 7.12f, 6.0f
-};
-float localPct[] =  {
-  100.0f, 88.0f, 49.0f,  20.0f, 5.0f,  0.0f
+float battPct[] =  {
+  99.0f, 83.0f,  71.0f,  60.0f,  34.0f,  20.0f,  07.0f,  05.0f,  03.0f,  0.0f
 };
 
 // Convert battery voltage to percent
-float getPct(int iVolt) {
-  float batteryVolt = ((float) iVolt) / 100;
+float getPct(float batteryVolt) {
+//  float batteryVolt = ((float) iVolt) / 100;
   float* volt;
   float* pct;
   int voltSize;
 
-  volt = tpVolt;
-  pct = tpPct;
-  voltSize = sizeof(tpVolt) / sizeof(float);
+  volt = battVolt;
+  pct = battPct;
+  voltSize = sizeof(battVolt) / sizeof(float);
 
   if (volt[0] < batteryVolt) {
-    return 100.0f;
+    return 99.0f;
   }
   if (volt[voltSize - 1] > batteryVolt) {
     return 0.0f;

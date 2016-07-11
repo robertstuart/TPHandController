@@ -1,5 +1,7 @@
 #include "Common.h"
 
+#define XBEE_SER Serial1
+
 #define ULONG_MAX 4294967295L
 #define NO_DISP 1000000
 
@@ -9,10 +11,12 @@ const int PIN_SW_SHIFT = 4;   // Wh Debug
 const int PIN_PWR = 11;
 const int PIN_LED_BD = 13;
 
-const int PIN_X = A0;     // Gn Joystick
-const int PIN_Y = A1;     // Bu Joystick
+const int PIN_X_A = A0;     // Gn Joystick A
+const int PIN_Y_A = A1;     // Bu Joystick A
 const int PIN_BATT = A2;  // Battery voltage
 const int PIN_VKEY = A3;  // Vi Vkey switches
+const int PIN_Y_B = A4;  // Joystick B
+const int PIN_X_B = A5;  // Joystick B
 
 unsigned long tStart = 0;
 
@@ -22,54 +26,56 @@ int key;
 int oldKey = 99;
 int oldShift = 99;
 
-double joyX = 0.0;
-double joyY = 0.0;
+double joyAX = 0.0;
+double joyAY = 0.0;
+double joyBX = 0.0;
+double joyBY = 0.0;
 
-unsigned long activeTime = 0L;
 unsigned long timeMilliseconds = 0L;
 unsigned long updateTrigger = 0L;
 unsigned long ledTrigger = 0L;
 unsigned long timeLowBatt = ULONG_MAX;
-unsigned long msgTime = 0UL;
+unsigned long msg2Time = 0UL;
+unsigned long msg3Time = 0UL;
 
 // State bits;
-boolean isDumping = false;
-boolean isRouteInProgress = false;
-boolean isPcActive = false;
-boolean isHcActive = false;
-boolean isOnGround = false;
-boolean isUpright = false;
-boolean isRunReady = false;
-boolean isRunning = false;
-boolean isHoldFps = false;
-boolean isHoldHeading = false;
-boolean isGyroSteer = false;
-boolean isStand = false;
+boolean is2Upright = false;
+boolean is2RunReady = false;
+boolean is2Running = false;
+boolean is2RouteInProgress = false;
+boolean is3RunReady = false;
+boolean is3RouteInProgress = false;
 
 boolean isLightOn = false;
 
 // Values to be displayed
-boolean isConnected = true; // for proper startup
-float tpPitch = 0.0;
-float tpHeading = 0;
-float tpFps = 0.0;
-int tpState = 0;
+boolean is2Connected = true; // for proper startup
+boolean is3Connected = true; // for proper startup
+float p2Pitch = 0.0;
+float p3Pitch = 0.0;
+float p2Heading = 0.0;
+float p3Heading = 0.0;
+float p2Fps = 0.0;
+float p3Fps = 0.0;
+int p2State = 0;
+int p3State = 0;
 int stateInt = 0;
-int hcBatt = 0;
-float tpBatt = 0;
-int tpBattPct = 0;
+float hcBatt = 0;
+float p2Batt = 0;
+float p3ABatt = 0; // Low voltage battery
+float p3BBatt = 0; // High voltage battery
 int hcBattPct = 0;
-String tpX = String("12.34");
-String tpY = String("12.34");
-int debug1 = 0; // Write to this to display value on row 4
-int debug2 = 0; // Write to this to display value on row 4
-int yaw = 12340;
-float tpSonarDistance = 0;
+int p2BattPct = 0;
+int p3ABattPct = 0;
+int p2BBattPct = 0;
+float p2SonarDistanceR = 0.0;
+float p2SonarDistanceL = 0.0;
 int tpMode = MODE_TP5;
 int tpValSet = 99;
 int tpBattVolt = 0;
 int tpRouteStep = 0;
-String message = "";
+String p2Message = "";
+String p3Message = "";
 
 
 /*****************************************************
@@ -78,7 +84,7 @@ String message = "";
  *
  ****************************************************/
 void setup() {
-  Serial1.begin(57600); // XBee
+  XBEE_SER.begin(57600); // XBee
   Serial.begin(115200); // debug
 
   pinMode(PIN_SWA, INPUT_PULLUP);
@@ -99,22 +105,26 @@ void setup() {
  *    otherwise it is called 10x per sec.
  ****************************************************/
 void loop() {
+  static unsigned int subCycle = 0;
   timeMilliseconds = millis();
   readXBee();
+  checkSwitches();
   if (timeMilliseconds > updateTrigger) { 
-    updateAll();
+    updateTrigger = timeMilliseconds + 30;
+    subCycle = ++subCycle % 3;
+    if (subCycle == 0) { // Transmit to TwoPotatoe
+        checkAJoystick();
+        send2Potatoe();
+    } else if (subCycle == 1) { // Transmit to ThreePotoate
+        checkBJoystick();
+        send3Potatoe();
+    } else { // Do misc tasks while 2&3Potatoe communicate
+      lcdUpdate();
+      checkConnected();
+    }
   }
 }
 
-void updateAll() {
-  updateTrigger = timeMilliseconds + 100;
-  checkJoystick();
-  sendJoyXY();
-  checkSwitches();
-  checkConnected();
-  interpretState();
-  lcdUpdate();
-}
 
 
 /*****************************************************
@@ -122,17 +132,28 @@ void updateAll() {
  *    checkJoystick() 
  *
  ****************************************************/
-void checkJoystick() {
-   const int JOY_ZERO = 15; // Range to treat as zero.
-  int a = analogRead(PIN_X);
+void checkAJoystick() {
+  const int JOY_ZERO = 15; // Range to treat as zero.
+
+  // joystic A
+  int a = analogRead(PIN_X_A);
   if ((a > (512 - JOY_ZERO)) && (a < (512 + JOY_ZERO))) a = 512;
-  joyX = ((float) (a -512)) / 512.0; // scale to +- 1.0
-  int b = analogRead(PIN_Y);
+  joyAX = ((float) (a -512)) / 512.0; // scale to +- 1.0
+  int b = analogRead(PIN_Y_A);
   if ((b > (512 - JOY_ZERO)) && (b < (512 + JOY_ZERO))) b = 512;
-  joyY = ((float) (b -512)) / 512.0; // scale to +- 1.0
-  if ((a != 512) || (b != 512)) {
-    activeTime = timeMilliseconds;
-  }
+  joyAY = ((float) (b -512)) / 512.0; // scale to +- 1.0
+}
+
+void checkBJoystick() {
+  const int JOY_ZERO = 15; // Range to treat as zero.
+  
+  // joystic B
+  int a = 1024 - analogRead(PIN_X_B);
+  if ((a > (512 - JOY_ZERO)) && (a < (512 + JOY_ZERO))) a = 512;
+  joyBX = ((float) (a -512)) / 512.0; // scale to +- 1.0
+  int b = 1024 - analogRead(PIN_Y_B);
+  if ((b > (512 - JOY_ZERO)) && (b < (512 + JOY_ZERO))) b = 512;
+  joyBY = ((float) (b -512)) / 512.0; // scale to +- 1.0
 }
 
 /*****************************************************
@@ -154,48 +175,44 @@ void checkSwitches() {
     oldKey = key;
     oldShift = shift;
   }
-  if (key != 13) {
-    activeTime = timeMilliseconds;
-  }
   if (shift == HIGH) {  // Shift key not pressed
     switch (key) {
       case 1: // top row right
-        sendXMsg(RCV_ROTATE, 90);
+        isLightOn = !isLightOn;
+        send2Msg(RCV_LIGHTS, (isLightOn) ? 1 : 0); 
         break;
       case 2: // top row middle
-        sendXMsg(RCV_ROTATE, -90);
+        if (is2RouteInProgress) send2Msg(RCV_ROUTE, 0);
+        else send2Msg(RCV_ROUTE, 1);
         break;
       case 3: // top row left
-        sendXMsg(RCV_RUN, (isRunReady) ? 0 : 1);
+        send2Msg(RCV_RUN, (is2RunReady) ? 0 : 1);
        break;
       case 4: // 2nd row right
-        sendXMsg(RCV_HOLD_FPS, (isHoldFps ? 0 : 1));
+        send2Msg(RCV_DUMP_START, 0); // Dump data
         break;
       case 5: // 2nd row middle
-        sendXMsg(RCV_STAND, isStand ? 0 : 1);
+        send2Msg(RCV_ROUTE_ES, 0);
         break;
       case 6: // 2nd row left
-        sendXMsg(RCV_ROUTE, (isRouteInProgress ? 0 : 1));
         break;
       case 7: // 3rd row right
-        sendXMsg(RCV_HOLD_HEADING, (isHoldHeading ? 0 : 1));
         break;
       case 8: // 3rd row middle
-        sendXMsg(RCV_GYRO_STEER, (isGyroSteer ? 0 : 1));
-        break;
+        if (is3RouteInProgress) send3Msg(RCV_ROUTE, 0);
+        else send3Msg(RCV_ROUTE, 1);
+         break;
       case 9: // 3rd row Left,  
-        sendXMsg(RCV_ROUTE_ES, 0); // Route, end stand.
+        send3Msg(RCV_RUN, (is3RunReady) ? 0 : 1);
         break;
       case 10: // 4th row right
-        isLightOn = !isLightOn;
-        sendXMsg(RCV_LIGHTS, (isLightOn) ? 1 : 0); 
+        send3Msg(RCV_DUMP_START, 0); // Dump data
         break;
       case 11: // 4th row middle
-        sendXMsg(RCV_DUMP_START, 0); // Dump data
+        send3Msg(RCV_ROUTE_ES, 0);
         break;
       case 12: // 4th row left
-        sendXMsg(RCV_RESET_NAV, 0);
-        break;
+         break;
       default: 
         break;     
     } 
@@ -203,34 +220,33 @@ void checkSwitches() {
   else {  // Shift key pressed.
     switch (key) {
       case 1:  // top row right
-        sendXMsg(RCV_ROTATE, -178);
         break;
       case 2: // top row middle
-        sendXMsg(RCV_ROTATE, 178);
+        send2Msg(RCV_SET_ROUTE, 1);
         break;
       case 3: // top row left
         break;
       case 4: // 2nd row right
         break;
       case 5: // 2nd row middle 
-        sendXMsg(RCV_ZERO_GYRO, 0); // Zero gyro for drift
+        send2Msg(RCV_SET_ROUTE, 0);
         break;
       case 6: // 2nd row left
-        powerDown();
         break;
       case 7: // 3rd row right
         break;
       case 8: // 3rd row middle
+        send3Msg(RCV_SET_ROUTE, 1);
         break;
       case 9: // 3rd row Left
-        sendXMsg(RCV_SET_ROUTE, 1); // Increment route
         break;
       case 10: // 4th row right
+        powerDown();
         break;
       case 11: // 4th row middle
+        send3Msg(RCV_SET_ROUTE, 0);
         break;
       case 12: // 4th row left
-        sendXMsg(RCV_SET_ROUTE, 0); // Decrement route
         break;
       default:   
         break;   
@@ -258,36 +274,31 @@ void ledBlink() {
 } // end ledBlink()
 
 void checkConnected() {
-  if ((msgTime + 500) > timeMilliseconds) {
-    isConnected = true;
+  if ((msg2Time + 500) > timeMilliseconds) {
+    is2Connected = true;
   }
   else {
-    isConnected = false;
+    is2Connected = false;
+  }
+  if ((msg3Time + 500) > timeMilliseconds) {
+    is3Connected = true;
+  }
+  else {
+    is3Connected = false;
   }
 }
 
 
-// better to do by parsing string? or division & modulus?
-void interpretState() {
-  stateInt          = tpState;
-  isStand           = stateBit(2048);
-  isGyroSteer       = stateBit(1024);
-  isHoldFps         = stateBit(512);
-  isHoldHeading     = stateBit(256);
-  isDumping         = stateBit(128);
-  isRouteInProgress = stateBit(64);
-  isPcActive        = stateBit(32);
-  isHcActive        = stateBit(16);
-  isOnGround        = stateBit(8);
-  isUpright         = stateBit(4);
-  isRunReady        = stateBit(2);
-  isRunning         = stateBit(1);
+void interpret2State(int state) {
+  p2State = state;
+  is2Running = (p2State & 1) > 0;
+  is2RunReady = (p2State & 2) > 0;
+  is2Upright = (p2State & 4) > 0;
+  is2RouteInProgress = (p2State & 64) > 0;
+}
+void interpret3State(int state) {
+  p3State = state;
+  is3RunReady = (p3State & 2) > 0;
+  is3RouteInProgress = (p3State & 64) > 0;
 }
 
-boolean stateBit(int factor) {
-  if (stateInt >= factor) {
-    stateInt -= factor;
-    return true;
-  }
-  return false;
-}
