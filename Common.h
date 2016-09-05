@@ -4,7 +4,6 @@ const int XBEE_2P_SH         = 0x13A200;    // TwoPotatoe Serial
 const int XBEE_2P_SL         = 0x409BD79F;
 const int XBEE_3P_SH         = 0x13A200;    // ThreePotatoe Serial
 const int XBEE_3P_SL         = 0x409FEBCF;
-const int XBEE_3P_B          = 0x000000CF;
 const int XBEE_C1_SH         = 0x13A200;    // Controller1 Serial
 const int XBEE_C1_SL         = 0x409FEBF8;
 
@@ -27,9 +26,11 @@ const int SEND_VALSET      = 140;
 const int SEND_ROUTE_NAME  = 141;
 const int SEND_X           = 142;
 const int SEND_Y           = 143;
-const int SEND_SONAR_F     = 144;
+//const int SEND_SONAR_F     = 144;
 const int SEND_SONAR_L     = 145;
 const int SEND_DUMP_TICKS  = 146;
+const int SEND_XPOS        = 190;
+const int SEND_YPOS        = 191;
 
 const int RCV_JOYX         = 129;
 const int RCV_JOYY         = 130;

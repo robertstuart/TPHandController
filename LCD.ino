@@ -3,8 +3,10 @@ float hcBattDisp = 0;
 float p2BattDisp = 0;
 float p3ABattDisp = 0;
 float p3BBattDisp = 0;
-float sonarDistanceRDisp = 0;
-float sonarDistanceLDisp = 0;
+float p2SonarDistanceRDisp = 0;
+float p2SonarDistanceLDisp = 0;
+float p3SonarDistanceRDisp = 0;
+float p3SonarDistanceLDisp = 0;
 boolean is2ConnectedDisp = true;
 boolean is3ConnectedDisp = true;
 int p2StateDisp = 0;
@@ -130,17 +132,31 @@ void lcdUpdate() {
   }
 
   // Sonar
-  if (sonarDistanceLDisp != p2SonarDistanceL) {
-    sonarDistanceLDisp = p2SonarDistanceL;
+  if (p2SonarDistanceLDisp != p2SonarDistanceL) {
+    p2SonarDistanceLDisp = p2SonarDistanceL;
     snprintf(numBuf, 5, "%4.1f", p2SonarDistanceL);
     cursor(6, 0);
     Serial3.print(numBuf); 
     Serial3.print("  ");
   }
-  if (sonarDistanceRDisp != p2SonarDistanceR) {
-    sonarDistanceRDisp = p2SonarDistanceR;
+  if (p2SonarDistanceRDisp != p2SonarDistanceR) {
+    p2SonarDistanceRDisp = p2SonarDistanceR;
     snprintf(numBuf, 5, "%4.1f", p2SonarDistanceR);
     cursor(11, 0);
+    Serial3.print(numBuf); 
+    Serial3.print("  ");
+  }
+  if (p3SonarDistanceLDisp != p3SonarDistanceL) {
+    p3SonarDistanceLDisp = p3SonarDistanceL;
+    snprintf(numBuf, 5, "%4.1f", p3SonarDistanceL);
+    cursor(6, 2);
+    Serial3.print(numBuf); 
+    Serial3.print("  ");
+  }
+  if (p3SonarDistanceRDisp != p3SonarDistanceR) {
+    p3SonarDistanceRDisp = p3SonarDistanceR;
+    snprintf(numBuf, 5, "%4.1f", p3SonarDistanceR);
+    cursor(11, 2);
     Serial3.print(numBuf); 
     Serial3.print("  ");
   }
@@ -251,7 +267,6 @@ void setBattPct(int y, float volt, int cells, char trail[]) {
 float getHcBatt() {
   float a = (float) analogRead(PIN_BATT);
   hcBatt = a * 0.00911;
-Serial.println(hcBatt);
   return hcBatt;
 }
 

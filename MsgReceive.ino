@@ -1,3 +1,4 @@
+#define XBEE_3P_B 0xCF
 const int DATA_FRAME_MAX = 72;
 byte rcvDataFrame[DATA_FRAME_MAX + 1];
 int rcvDataFramePtr = 0;
@@ -64,6 +65,7 @@ void interpretRcvDataFrame() {
     case 0x8B:           // Transmit Status
       break;
     case 0x90:           // Receive Packet (A0=0)
+//      Serial.println(rcvDataFrame[8],HEX);
       isTwoPotatoe = (rcvDataFrame[8] == XBEE_3P_B) ? false : true;
       doRFData(isTwoPotatoe);
       break;
@@ -121,9 +123,9 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
   float floatVal;
   boolean booleanVal;
   msgStr[count] = 0;
-//Serial.print(cmd); 
-//Serial.print("\t");
-//Serial.println(msgStr);
+Serial.print(cmd); 
+Serial.print("\t");
+Serial.println(msgStr);
   
   switch (cmd) {
     case SEND_FPS:
@@ -142,10 +144,16 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
       }
       break;
     case SEND_SONAR_R:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) p2SonarDistanceR = floatVal;
+      if (sscanf(msgStr, "%f", &floatVal) > 0) {
+        if (isTwoPotatoe) p2SonarDistanceR = floatVal;
+        else p3SonarDistanceR = floatVal;
+      }
       break;
     case SEND_SONAR_L:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) p2SonarDistanceL = floatVal;
+      if (sscanf(msgStr, "%f", &floatVal) > 0) {
+        if (isTwoPotatoe) p2SonarDistanceL = floatVal;
+        else p3SonarDistanceL = floatVal;
+      }
       break;
     case SEND_ROUTE_STEP:
       if (sscanf(msgStr, "%d", &intVal) > 0) tpRouteStep = intVal;
