@@ -95,7 +95,7 @@ void doRFData(boolean isTwoPotatoe) {
   char msgVal[100];
   int msgValPtr = 0;
   if (isTwoPotatoe) msg2Time = timeMilliseconds;
-  else msg3Time = timeMilliseconds;
+  else msg6Time = timeMilliseconds;
   
   while (rfPtr < rcvDataFrameLength) {
     byte b = rcvDataFrame[rfPtr];
@@ -123,30 +123,15 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
   float floatVal;
   boolean booleanVal;
   msgStr[count] = 0;
-Serial.print(cmd); 
-Serial.print("\t");
-Serial.println(msgStr);
+//Serial.print(cmd); 
+//Serial.print("\t");
+//Serial.println(msgStr);
   
   switch (cmd) {
     case SEND_FPS:
       if (sscanf(msgStr, "%f", &floatVal) > 0) {
         if (isTwoPotatoe) p2Fps = floatVal;
-        else  p3Fps = floatVal;
-      }
-      break;
-    case SEND_PITCH:
-//      if (sscanf(msgStr, "%f", &floatVal) > 0) tpPitch = floatVal;
-      break;
-    case SEND_HEADING:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) {
-        if (isTwoPotatoe) p2Heading = floatVal;
-        else p3Heading = floatVal;
-      }
-      break;
-    case SEND_SONAR_R:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) {
-        if (isTwoPotatoe) p2SonarDistanceR = floatVal;
-        else p3SonarDistanceR = floatVal;
+        else  p6Fps = floatVal;
       }
       break;
     case SEND_SONAR_L:
@@ -155,23 +140,29 @@ Serial.println(msgStr);
         else p3SonarDistanceL = floatVal;
       }
       break;
+    case SEND_SONAR_F:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) {
+        if (isTwoPotatoe) p2SonarDistanceF = floatVal;
+        else p3SonarDistanceF = floatVal;
+      }
+      break;
+    case SEND_SONAR_R:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) {
+        if (isTwoPotatoe) p2SonarDistanceR = floatVal;
+        else p3SonarDistanceR = floatVal;
+      }
+      break;
     case SEND_ROUTE_STEP:
       if (sscanf(msgStr, "%d", &intVal) > 0) tpRouteStep = intVal;
       break;
     case SEND_MODE:
       if (sscanf(msgStr, "%d", &intVal) > 0) tpMode = intVal;
       break;
-    case SEND_BATT_A:
+    case SEND_BATT:
       if (sscanf(msgStr, "%f", &floatVal) > 0) {
         if (isTwoPotatoe) p2Batt = floatVal;
-        else p3ABatt = floatVal;
+        else p6Batt = floatVal;
       }
-      break;
-    case SEND_BATT_B:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) p3BBatt = floatVal;
-      break;
-    case SEND_VALSET:
-      if (sscanf(msgStr, "%d", &intVal) > 0) tpValSet = intVal;
       break;
     case SEND_ROUTE_NAME:
     case SEND_MESSAGE:
@@ -181,7 +172,7 @@ Serial.println(msgStr);
     case SEND_STATE:
       if (sscanf(msgStr, "%d", &intVal) > 0) {
         if (isTwoPotatoe) interpret2State(intVal);
-        else interpret3State(intVal);
+        else interpret6State(intVal);
       }
       break;
     case SEND_X:
@@ -189,6 +180,12 @@ Serial.println(msgStr);
       break;
     case SEND_Y:
 //      if (sscanf(msgStr, "%f", &floatVal) > 0) tpY = String(msgStr);
+      break;
+    case SEND_V1:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) v1 = floatVal;
+      break;
+    case SEND_V2:
+      if (sscanf(msgStr, "%f", &floatVal) > 0) v2 = floatVal;
       break;
     default:
       Serial.print("Illegal message received: "); Serial.println(cmd);

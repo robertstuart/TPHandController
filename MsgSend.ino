@@ -1,69 +1,68 @@
 const int RF_DATA_SIZE = 72;
 byte rfData2[RF_DATA_SIZE];
-byte rfData3[RF_DATA_SIZE];
+byte rfData6[RF_DATA_SIZE];
 int rfData2Ptr = 0;
-int rfData3Ptr = 0;
+int rfData6Ptr = 0;
 
 int dumpPtr, dumpEnd;
 int tickDumpPtr, tickDumpEnd;
 
 void send2Potatoe() {
-  send2Msg(RCV_JOYX, 2, joyAX);
-  send2Msg(RCV_JOYY, 2, joyAY);
+  queue2Msg(RCV_JOYX, 2, joyAX);
+  queue2Msg(RCV_JOYY, 2, joyAY);
   xTransmitRequest(rfData2, rfData2Ptr, true);
-//Serial.println(timeMilliseconds);
   rfData2Ptr = 0;
 }
 
 
-void send3Potatoe() {
-  send3Msg(RCV_JOYX, 2, joyBX);
-  send3Msg(RCV_JOYY, 2, joyBY);
-  xTransmitRequest(rfData3, rfData3Ptr, false);
-  rfData3Ptr = 0;
+void send6Potatoe() {
+  queue6Msg(RCV_JOYX_I, (int) (joyBX * 100.0));
+  queue6Msg(RCV_JOYY_I, (int) (joyBY * 100.0));
+  xTransmitRequest(rfData6, rfData6Ptr, false);
+  rfData6Ptr = 0;
 }
 
 
 
-void send2Msg(int cmd, int precision, double val) {
+void queue2Msg(int cmd, int precision, double val) {
   char buf[20];
   int len = sprintf(buf, "%.*f", precision, val);
   add2Message(cmd, buf, len);
 }
-void send3Msg(int cmd, int precision, double val) {
+void queue6Msg(int cmd, int precision, double val) {
   char buf[20];
   int len = sprintf(buf, "%.*f", precision, val);
-  add3Message(cmd, buf, len);
+  add6Message(cmd, buf, len);
 }
 
 
 
-void send2Msg(int cmd, int val) {
+void queue2Msg(int cmd, int val) {
   char buf[10];
   int len = sprintf(buf, "%d", val);
   add2Message(cmd, buf, len);
 }
-void send3Msg(int cmd, int val) {
+void queue6Msg(int cmd, int val) {
   char buf[10];
   int len = sprintf(buf, "%d", val);
-  add3Message(cmd, buf, len);
+  add6Message(cmd, buf, len);
 }
 
 
 
-void send2Msg(int cmd, String val) {
+void queue2Msg(int cmd, String val) {
   char buf[50];
   int len = val.length();
   if (len >= 50) return;
   val.toCharArray(buf, len);
   add2Message(cmd, buf, len);
 }
-void send3Msg(int cmd, String val) {
+void queue6Msg(int cmd, String val) {
   char buf[50];
   int len = val.length();
   if (len >= 50) return;
   val.toCharArray(buf, len);
-  add3Message(cmd, buf, len);
+  add6Message(cmd, buf, len);
 }
 
 
@@ -78,11 +77,11 @@ void add2Message(int cmd, char buf[], int len) {
     rfData2[rfData2Ptr++] = buf[i];
   }
 }
-void add3Message(int cmd, char buf[], int len) {
-  if ((len + 1 + rfData3Ptr) >= RF_DATA_SIZE) return;
-  rfData3[rfData3Ptr++] = cmd;
+void add6Message(int cmd, char buf[], int len) {
+  if ((len + 1 + rfData6Ptr) >= RF_DATA_SIZE) return;
+  rfData6[rfData6Ptr++] = cmd;
   for (int i = 0; i < len; i++) {
-    rfData3[rfData3Ptr++] = buf[i];
+    rfData6[rfData6Ptr++] = buf[i];
   }
 }
 
