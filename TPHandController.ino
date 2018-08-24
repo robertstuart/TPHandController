@@ -235,6 +235,7 @@ void checkButtons() {
     if (hasPressed(BUTTON_1R)) queue2Msg(RCV_KILLTP, 0);
     if (hasPressed(BUTTON_2L)) queue2Msg(RCV_V2, 1);
     if (hasPressed(BUTTON_2M)) queue2Msg(RCV_V2, 0);
+    if (hasPressed(BUTTON_2R)) queue2Msg(RCV_MOT_DISABLE, 0);
     if (hasPressed(BUTTON_3L)) queue6Msg(RCV_V1, 1);
     if (hasPressed(BUTTON_3M)) queue6Msg(RCV_V1, 0);
     if (hasPressed(BUTTON_4L)) queue6Msg(RCV_V2, 1);
