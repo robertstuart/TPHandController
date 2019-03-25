@@ -16,7 +16,7 @@ float v2Disp = 0.0;
 boolean isFastModeDisp = true;
 
 String p2MessageDisp = "";
-//String p3MessageDisp = "";
+String p3MessageDisp = "";
 String spacex = String("                    ");
 char numBuf[] = "           ";
 
@@ -109,48 +109,25 @@ void lcdUpdate() {
     Serial3.print("fps   ");
     }
 
-  // Sonar
-  if (p2SonarDistanceLDisp != p2SonarDistanceL) {
-    p2SonarDistanceLDisp = p2SonarDistanceL;
-    snprintf(numBuf, 5, "%4.1f", p2SonarDistanceL);
-    cursor(0, 1);
-    Serial3.print(numBuf);
-    Serial3.print(" ");
-  }
-  if (p2SonarDistanceFDisp != p2SonarDistanceF) {
-    p2SonarDistanceFDisp = p2SonarDistanceF;
-    snprintf(numBuf, 5, "%4.1f", p2SonarDistanceF);
-    cursor(5, 1);
-    Serial3.print(numBuf);
-    Serial3.print(" ");
-  }
-  if (p2SonarDistanceRDisp != p2SonarDistanceR) {
-    p2SonarDistanceRDisp = p2SonarDistanceR;
-    snprintf(numBuf, 5, "%4.1f", p2SonarDistanceR);
-    cursor(10, 1);
-    Serial3.print(numBuf);
-    Serial3.print(" ");
-  }
-
-  // Messages
-  //  if (!p2MessageDisp.equals(p2Message)) {
-  //    p2MessageDisp = p2Message;
-  //    String tmpStr = String(p2Message);
-  //    tmpStr.concat(spacex);
-  //    tmpStr = tmpStr.substring(0,20);
-  //    cursor(0,3);
-  //    Serial3.print(tmpStr);
-  //    p2MessageTrigger = timeMilliseconds + 10000;
-  //  }
-  //  if (!p3MessageDisp.equals(p3Message)) {
-  //    p3MessageDisp = p3Message;
-  //    String tmpStr = String(p3Message);
-  //    tmpStr.concat(spacex);
-  //    tmpStr = tmpStr.substring(0,20);
-  //    cursor(0,3);
-  //    Serial3.print(tmpStr);
-  //    p3MessageTrigger = timeMilliseconds + 10000;
-  //  }
+    // Messages
+    if (!p2MessageDisp.equals(p2Message)) {
+      p2MessageDisp = String(p2Message);
+      String tmpStr = String(p2Message);
+      tmpStr.concat(spacex);
+      tmpStr = tmpStr.substring(0,20);
+      cursor(0,3);
+      Serial3.print(tmpStr);
+//      p2MessageTrigger = timeMilliseconds + 10000;
+    }
+    if (!p3MessageDisp.equals(p3Message)) {
+      p3MessageDisp = String(p3Message);
+      String tmpStr = String(p3Message);
+      tmpStr.concat(spacex);
+      tmpStr = tmpStr.substring(0,20);
+      cursor(0,3);
+      Serial3.print(tmpStr);
+//      p3MessageTrigger = timeMilliseconds + 10000;
+    }
 
   // Varialbles
   if (v1Disp != v1) {

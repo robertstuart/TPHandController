@@ -44,13 +44,14 @@ const int RCV_RT_ENABLE    = 146; // toggle
 const int RCV_RT_START     = 147;
 const int RCV_RT_SET       = 148; // 0 to decrease, 1 to increase
 const int RCV_GET_UP       = 150;
+const int RCV_GET_DOWN     = 151;
 const int RCV_DUMP_TICKS   = 157; 
 const int RCV_JOYX_I       = 160;
 const int RCV_JOYY_I       = 161;
 const int RCV_V1           = 162;
 const int RCV_V2           = 163;
 const int RCV_LIFT         = 164;
-const int RCV_KILLTP       = 165;
+const int RCV_KILL_UP      = 165;
 const int RCV_MOT_DISABLE  = 166;
 
 const int SEND_RCV_TERM    =   0;

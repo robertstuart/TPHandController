@@ -211,35 +211,44 @@ void checkButtons() {
   int alt = (digitalRead(PIN_SW_ALT) == LOW) ? true : false;
 
   if ((shift == false) && (ctrl == false)) {  // Shift & Control key not pressed
-    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_RUN, (is2RunReady) ? 0 : 1);
+    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_RUN, (is2RunReady) ? 0 : 1);   /** Row 1 **/
     if (hasPressed(BUTTON_1M)) queue2Msg(RCV_LIGHTS, 0);  // just toggle
     if (hasPressed(BUTTON_1R)) queue2Msg(RCV_LIFT, 0); // Toggle lift sensors
-    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_RT_START, 0);
+    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_RT_START, 0); /******************* Row 2 **/
     if (hasPressed(BUTTON_2M)) queue2Msg(RCV_RT_ENABLE, 0);
-    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_RUN, 0);  // Just toggle
+    if (hasPressed(BUTTON_2R)) ;
+    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_RUN, 0); /************************ Row 3 **/
     if (hasPressed(BUTTON_3M)) queue6Msg(RCV_GET_UP, 0);
     if (hasPressed(BUTTON_3R)) queue6Msg(RCV_LOG, 0);
-    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_RT_START, 0);
+    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_RT_START, 0); /******************* Row 4 **/
     if (hasPressed(BUTTON_4M)) queue6Msg(RCV_RT_ENABLE, 0);
+    if (hasPressed(BUTTON_4R)) ;
   } else if ((shift == true) && (ctrl == false)) {  // Shift key pressed.
-    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_RT_SET, 1);
+    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_RT_SET, 1); /********************* Row 1 **/
+    if (hasPressed(BUTTON_1M)) ;
     if (hasPressed(BUTTON_1R)) isFastMode = ! isFastMode;
-    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_RT_SET, 0);
+    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_RT_SET, 0); /********************* Row 2 **/
+    if (hasPressed(BUTTON_2M)) ;
     if (hasPressed(BUTTON_2R)) isJoySwap = !isJoySwap;
-    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_RT_SET, 1);
-    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_RT_SET, 0);
+    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_RT_SET, 1); /********************* Row 3 **/
+    if (hasPressed(BUTTON_3M)) queue6Msg(RCV_GET_DOWN, 1);
+    if (hasPressed(BUTTON_3R)) ;
+    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_RT_SET, 0); /********************* Row 4 **/
+    if (hasPressed(BUTTON_4M)) ;
     if (hasPressed(BUTTON_4R)) powerDown();
   } else if (ctrl == true) {
-    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_V1, 1);
+    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_V1, 1);  /************************ Row 1 **/
     if (hasPressed(BUTTON_1M)) queue2Msg(RCV_V1, 0);
-    if (hasPressed(BUTTON_1R)) queue2Msg(RCV_KILLTP, 0);
-    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_V2, 1);
+    if (hasPressed(BUTTON_1R)) queue2Msg(RCV_KILL_UP, 0);
+    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_V2, 1); /************************* Row 2 **/
     if (hasPressed(BUTTON_2M)) queue2Msg(RCV_V2, 0);
     if (hasPressed(BUTTON_2R)) queue2Msg(RCV_MOT_DISABLE, 0);
-    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_V1, 1);
-    if (hasPressed(BUTTON_3M)) queue6Msg(RCV_V1, 0);
-    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_V2, 1);
+    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_V1, 1); /************************* Row 3 **/
+    if (hasPressed(BUTTON_3M)) queue6Msg(RCV_V2, 1);
+    if (hasPressed(BUTTON_3R)) queue6Msg(RCV_KILL_UP, 0);
+    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_V1, 0);  /************************ Row 4 **/
     if (hasPressed(BUTTON_4M)) queue6Msg(RCV_V2, 0);
+    if (hasPressed(BUTTON_4R)) ;
   } 
 }
 

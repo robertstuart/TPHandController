@@ -134,24 +134,6 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
         else  p6Fps = floatVal;
       }
       break;
-    case SEND_SONAR_L:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) {
-        if (isTwoPotatoe) p2SonarDistanceL = floatVal;
-        else p3SonarDistanceL = floatVal;
-      }
-      break;
-    case SEND_SONAR_F:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) {
-        if (isTwoPotatoe) p2SonarDistanceF = floatVal;
-        else p3SonarDistanceF = floatVal;
-      }
-      break;
-    case SEND_SONAR_R:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) {
-        if (isTwoPotatoe) p2SonarDistanceR = floatVal;
-        else p3SonarDistanceR = floatVal;
-      }
-      break;
     case SEND_ROUTE_STEP:
       if (sscanf(msgStr, "%d", &intVal) > 0) tpRouteStep = intVal;
       break;
@@ -168,6 +150,7 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
     case SEND_MESSAGE:
       if (isTwoPotatoe) p2Message = String(msgStr);
       else p3Message = String(msgStr);
+      Serial.println(msgStr);
       break;
     case SEND_STATE:
       if (sscanf(msgStr, "%d", &intVal) > 0) {
