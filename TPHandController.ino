@@ -1,28 +1,32 @@
-#include "Common.h"
+/*****************************************************************************-
+ *                        TPHandController
+ *              Hand controller for TwoPotatoe and SixPotatoe
+ *****************************************************************************/
+#include "Ma_HC.h"
 
 #define XBEE_SER Serial1
 
 #define ULONG_MAX 4294967295L
 #define NO_DISP 1000000
 
-const int PIN_SW_CTRL = 2;   // Control key, lower left
-const int PIN_SW_ALT = 3;   // Alt key (intermittent!)
-const int PIN_SW_SHIFT = 4;   // Shift key, lower left
+const int PIN_SW_CTRL = 3;   // Control key, lower left
+const int PIN_SW_2_6 = 4;    // 2Potatoe & 6Potatoe modes
+const int PIN_SW_SHIFT = 2;  // Shift key, lower left
 const int PIN_PWR = 11;
 const int PIN_LED_BD = 13;
 
-const int BUTTON_1L = 4;
-const int BUTTON_1M = 7;
-const int BUTTON_1R = 6;
-const int BUTTON_2L = 1;
-const int BUTTON_2M = 9;
-const int BUTTON_2R = 3;
-const int BUTTON_3L = 8;
-const int BUTTON_3M = 2;
-const int BUTTON_3R = 11;
-const int BUTTON_4L = 5;
-const int BUTTON_4M = 0;
-const int BUTTON_4R = 10;
+const int BUTTON_1L_NUM = 4;
+const int BUTTON_1M_NUM = 7;
+const int BUTTON_1R_NUM = 6;
+const int BUTTON_2L_NUM = 1;
+const int BUTTON_2M_NUM = 9;
+const int BUTTON_2R_NUM = 3;
+const int BUTTON_3L_NUM = 8;
+const int BUTTON_3M_NUM = 2;
+const int BUTTON_3R_NUM = 11;
+const int BUTTON_4L_NUM = 5;
+const int BUTTON_4M_NUM = 0;
+const int BUTTON_4R_NUM = 10;
 
 const int PIN_X_A = A0;     // Gn Joystick A
 const int PIN_Y_A = A1;     // Bu Joystick A
@@ -31,6 +35,8 @@ const int PIN_VKEY = A3;  // Vi Vkey switches
 const int PIN_Y_B = A4;  // Joystick B
 const int PIN_X_B = A5;  // Joystick B
 
+boolean isP2Mode = true;  // true = TwoPotatoe, false = SixPotatoe mode
+boolean isVMode = true;   // True if variables rather than steps are displayed.
 unsigned long tStart = 0;
 
 boolean lightState = false;
@@ -38,63 +44,55 @@ boolean routeState = false;
 int key;
 int oldKey = 99;
 int oldShift = 99;
+char message[100];
 
-double joyAX = 0.0;
-double joyAY = 0.0;
-double joyBX = 0.0;
-double joyBY = 0.0;
+float joyX = 0.0;
+float joyY = 0.0;
 
-unsigned long timeMilliseconds = 0L;
+unsigned long timeMillis = 0L;
 unsigned long updateTrigger = 0L;
 unsigned long ledTrigger = 0L;
 unsigned long timeLowBatt = ULONG_MAX;
 unsigned long msg2Time = 0UL;
 unsigned long msg6Time = 0UL;
 
-// State bits;
-boolean is2Upright = false;
-boolean is2RunReady = false;
-boolean is2Running = false;
-boolean is2RouteInProgress = false;
-boolean is6Upright = false;
-boolean is6RunReady = false;
-boolean is6Running = false;
-boolean is6RouteInProgress = false;
-boolean isFastMode = false;
-boolean isJoySwap = false;
+boolean ctrlState = false;
+boolean shiftState = false;
 
-boolean isLightOn = false;
+// State bits;
+boolean is2Connected = false;
+boolean is6Connected = false;
+boolean is2Upright = false;
+boolean is6Upright = false;
+boolean is2RunReady = false;
+boolean is6RunReady = false;
+boolean is2Running = false;
+boolean is6Running = false;
+boolean is2RouteInProgress = false;
+boolean is6RouteInProgress = false;
 
 // Values to be displayed
-boolean is2Connected = false; // for proper startup
-boolean is6Connected = false; // for proper startup
-float p2Heading = 0.0;
-float p3Heading = 0.0;
-float p2Fps = 0.0;
-float p6Fps = 0.0;
 int p2State = 0;
 int p6State = 0;
-int stateInt = 0;
-float hcBatt = 0;
-float p2Batt = 0;
-float p6Batt = 0; 
+float p2BattV = 0;
+float p6BattV = 0;
+float p2Fps = 0.0;
+float p6Fps = 0.0;
+int p2Tuning = 0;
+int p6Tuning = 6;
+String p2Message = "";
+String p6Message = "";
+int p2Step = 0;
+int p6Step = 0;
+float p2V1 = 0.0;
+float p2V2 = 0.0;
+float p6V1 = 0.0;
+float p6V2 = 0.0;
+float hcBattV = 0;
+
 int hcBattPct = 0;
 int p2BattPct = 0;
-int p6ABattPct = 0;
-float v1 = 0.0;
-float v2 = 0.0;
-float p2SonarDistanceL = 0.0;
-float p2SonarDistanceF = 0.0;
-float p2SonarDistanceR = 0.0;
-float p3SonarDistanceL = 0.0;
-float p3SonarDistanceF = 0.0;
-float p3SonarDistanceR = 0.0;
-int tpMode = MODE_TP5;
-int tpValSet = 99;
-int tpBattVolt = 0;
-int tpRouteStep = 0;
-String p2Message = "";
-String p3Message = "";
+int p6BattPct = 0;
 
 struct button {
   int pin;
@@ -102,20 +100,21 @@ struct button {
   boolean oldState;
   boolean isPressedTransition;
 };
-struct button buttons[] = {{34,0,false,false}, {35,0,false,false}, {36,0,false,false}, {37,0,false,false}, 
-                           {38,0,false,false}, {39,0,false,false}, {40,0,false,false}, {41,0,false,false}, 
-                           {42,0,false,false}, {43,0,false,false}, {44,0,false,false}, {45,0,false,false}};
+struct button buttons[] = {{34, 0, false, false}, {35, 0, false, false}, {36, 0, false, false}, {37, 0, false, false},
+  {38, 0, false, false}, {39, 0, false, false}, {40, 0, false, false}, {41, 0, false, false},
+  {42, 0, false, false}, {43, 0, false, false}, {44, 0, false, false}, {45, 0, false, false}
+};
 
 
-/*******************************************************************************
- * setup()
+/*****************************************************************************-
+ *   setup()
  ******************************************************************************/
 void setup() {
   XBEE_SER.begin(57600); // XBee
   Serial.begin(115200); // debug
 
   pinMode(PIN_SW_CTRL, INPUT_PULLUP);
-  pinMode(PIN_SW_ALT, INPUT_PULLUP);
+  pinMode(PIN_SW_2_6, INPUT_PULLUP);
   pinMode(PIN_SW_SHIFT, INPUT_PULLUP);
   pinMode(PIN_PWR, OUTPUT);
   pinMode(PIN_LED_BD, OUTPUT);
@@ -126,27 +125,29 @@ void setup() {
   lcdInit();
 }
 
-/*******************************************************************************
- * check?Joystick()
- ******************************************************************************/
-/*******************************************************************************
- *    loop() 
+
+
+/*****************************************************************************-
+ *    loop()
  ******************************************************************************/
 void loop() {
   static unsigned int subCycle = 0;
-  timeMilliseconds = millis();
+  timeMillis = millis();
   readXBee();
   buttonStates();
-  if (timeMilliseconds > updateTrigger) { 
+  if (timeMillis > updateTrigger) {
     checkButtons();
-    updateTrigger = timeMilliseconds + 30;
-    subCycle = ++subCycle % 3;
+    updateTrigger = timeMillis + 30;
+    ++ subCycle;
+    subCycle = subCycle % 3;
     if (subCycle == 0) { // Transmit to TwoPotatoe
-        checkAJoystick();
-        send2Potatoe();
+      if (isP2Mode) checkAJoystick();
+      else checkBJoystick();
+      send2Potatoe();
     } else if (subCycle == 1) { // Transmit to SixPotoate
-        checkBJoystick();
-        send6Potatoe();
+      if (isP2Mode) checkBJoystick();
+      else checkAJoystick();
+      send6Potatoe();
     } else { // Do misc tasks while 2&3Potatoe communicate
       lcdUpdate();
       checkConnected();
@@ -156,123 +157,106 @@ void loop() {
 
 
 
-/*******************************************************************************
+/*****************************************************************************-
  * check?Joystick()
  ******************************************************************************/
 void checkAJoystick() {
   const int JOY_ZERO = 15; // Range to treat as zero.
 
-  // joystic A
+  // joysticK A
   int a = analogRead(PIN_X_A);
   if ((a > (512 - JOY_ZERO)) && (a < (512 + JOY_ZERO))) a = 512;
-  float jx = ((float) (a -512)) / 512.0; // scale to +- 1.0
+  joyX = ((float) (a - 512)) / 512.0; // scale to +- 1.0
   int b = analogRead(PIN_Y_A);
   if ((b > (512 - JOY_ZERO)) && (b < (512 + JOY_ZERO))) b = 512;
-  float jy = ((float) (b -512)) / 512.0; // scale to +- 1.0
-  if (!isFastMode) joyAY *= 0.4;
-  if (!isJoySwap) {
-    joyAX = jx;
-    joyAY = jy;
-  } else {
-    joyBX = jx;
-    joyBY = jy;
-  }
-  
+   joyY = ((float) (b - 512)) / 512.0; // scale to +- 1.0
 }
 
 void checkBJoystick() {
   const int JOY_ZERO = 15; // Range to treat as zero.
-  
-  // joystic B
+
+  // joysticK B
   int a = 1024 - analogRead(PIN_X_B);
   if ((a > (512 - JOY_ZERO)) && (a < (512 + JOY_ZERO))) a = 512;
-  float jx = ((float) (a -512)) / 512.0; // scale to +- 1.0
+  joyX = ((float) (a - 512)) / 512.0; // scale to +- 1.0
   int b = 1024 - analogRead(PIN_Y_B);
   if ((b > (512 - JOY_ZERO)) && (b < (512 + JOY_ZERO))) b = 512;
-  float jy = ((float) (b -512)) / 512.0; // scale to +- 1.0
-  if (!isJoySwap) {
-    joyBX = jx;
-    joyBY = jy;
-  } else {
-    joyAX = jx;
-    joyAY = jy;
-  }
+  joyY = ((float) (b - 512)) / 512.0; // scale to +- 1.0
 }
 
 
 
-/*******************************************************************************
+/*****************************************************************************-
  * checkButtons()
  ******************************************************************************/
 void checkButtons() {
-  int x = 0;
-  boolean shift = (digitalRead(PIN_SW_SHIFT) == LOW) ? true : false;
-  boolean ctrl = (digitalRead(PIN_SW_CTRL) == LOW) ? true : false;
-  int alt = (digitalRead(PIN_SW_ALT) == LOW) ? true : false;
-
-  if ((shift == false) && (ctrl == false)) {  // Shift & Control key not pressed
-    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_RUN, (is2RunReady) ? 0 : 1);   /** Row 1 **/
-    if (hasPressed(BUTTON_1M)) queue2Msg(RCV_LIGHTS, 0);  // just toggle
-    if (hasPressed(BUTTON_1R)) queue2Msg(RCV_LIFT, 0); // Toggle lift sensors
-    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_RT_START, 0); /******************* Row 2 **/
-    if (hasPressed(BUTTON_2M)) queue2Msg(RCV_RT_ENABLE, 0);
-    if (hasPressed(BUTTON_2R)) ;
-    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_RUN, 0); /************************ Row 3 **/
-    if (hasPressed(BUTTON_3M)) queue6Msg(RCV_GET_UP, 0);
-    if (hasPressed(BUTTON_3R)) queue6Msg(RCV_LOG, 0);
-    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_RT_START, 0); /******************* Row 4 **/
-    if (hasPressed(BUTTON_4M)) queue6Msg(RCV_RT_ENABLE, 0);
-    if (hasPressed(BUTTON_4R)) ;
-  } else if ((shift == true) && (ctrl == false)) {  // Shift key pressed.
-    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_RT_SET, 1); /********************* Row 1 **/
-    if (hasPressed(BUTTON_1M)) ;
-    if (hasPressed(BUTTON_1R)) isFastMode = ! isFastMode;
-    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_RT_SET, 0); /********************* Row 2 **/
-    if (hasPressed(BUTTON_2M)) ;
-    if (hasPressed(BUTTON_2R)) isJoySwap = !isJoySwap;
-    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_RT_SET, 1); /********************* Row 3 **/
-    if (hasPressed(BUTTON_3M)) queue6Msg(RCV_GET_DOWN, 1);
-    if (hasPressed(BUTTON_3R)) ;
-    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_RT_SET, 0); /********************* Row 4 **/
-    if (hasPressed(BUTTON_4M)) ;
-    if (hasPressed(BUTTON_4R)) powerDown();
-  } else if (ctrl == true) {
-    if (hasPressed(BUTTON_1L)) queue2Msg(RCV_V1, 1);  /************************ Row 1 **/
-    if (hasPressed(BUTTON_1M)) queue2Msg(RCV_V1, 0);
-    if (hasPressed(BUTTON_1R)) queue2Msg(RCV_KILL_UP, 0);
-    if (hasPressed(BUTTON_2L)) queue2Msg(RCV_V2, 1); /************************* Row 2 **/
-    if (hasPressed(BUTTON_2M)) queue2Msg(RCV_V2, 0);
-    if (hasPressed(BUTTON_2R)) queue2Msg(RCV_MOT_DISABLE, 0);
-    if (hasPressed(BUTTON_3L)) queue6Msg(RCV_V1, 1); /************************* Row 3 **/
-    if (hasPressed(BUTTON_3M)) queue6Msg(RCV_V2, 1);
-    if (hasPressed(BUTTON_3R)) queue6Msg(RCV_KILL_UP, 0);
-    if (hasPressed(BUTTON_4L)) queue6Msg(RCV_V1, 0);  /************************ Row 4 **/
-    if (hasPressed(BUTTON_4M)) queue6Msg(RCV_V2, 0);
-    if (hasPressed(BUTTON_4R)) ;
-  } 
+  int bits = IS_PRESS_BIT;
+  if (digitalRead(PIN_SW_SHIFT) == LOW) bits |= IS_SHIFT_BIT;
+  if (digitalRead(PIN_SW_CTRL) == LOW) bits |= IS_CTRL_BIT;
+  
+  if (hasPressed(BUTTON_1L_NUM)) queueMsg(BUTTON_1L, bits);
+  if (hasPressed(BUTTON_1M_NUM)) queueMsg(BUTTON_1M, bits);
+  if (hasPressed(BUTTON_1R_NUM)) queueMsg(BUTTON_1R, bits);
+  if (hasPressed(BUTTON_2L_NUM)) queueMsg(BUTTON_2L, bits);
+  if (hasPressed(BUTTON_2M_NUM)) queueMsg(BUTTON_2M, bits);
+  if (hasPressed(BUTTON_2R_NUM)) queueMsg(BUTTON_2R, bits);
+  if (hasPressed(BUTTON_3L_NUM)) queueMsg(BUTTON_3L, bits);
+  if (hasPressed(BUTTON_3M_NUM)) queueMsg(BUTTON_3M, bits);
+  if (hasPressed(BUTTON_3R_NUM)) queueMsg(BUTTON_3R, bits);
+  if (hasPressed(BUTTON_4L_NUM)) {
+    queueMsg(BUTTON_4L, bits);
+    if (bits == (IS_SHIFT_BIT | IS_PRESS_BIT)) powerDown();
+  }
+  if (hasPressed(BUTTON_4M_NUM)) queueMsg(BUTTON_4M, bits);
+  if (hasPressed(BUTTON_4R_NUM)) queueMsg(BUTTON_4R, bits);
+}
+void queueMsg(unsigned int button, int bits) {
+  int payload = (button * 256) + bits;
+  if (isP2Mode) queue2Msg(RCV_BUTTON, payload);
+  else queue6Msg(RCV_BUTTON, payload);
 }
 
-
-/*******************************************************************************
+/*****************************************************************************-
  * buttonStates()
  *      Polled frequently to check state of switches.
  ******************************************************************************/
 void buttonStates() {
-  int shift = digitalRead(PIN_SW_SHIFT);
+  static unsigned long shiftTimer = 0;
+  static unsigned long ctrlTimer = 0;
+  static unsigned long m26Timer = 0;
+  static boolean m26State = false;
+  static boolean oldM26State = false;
   boolean state;
 
   for (int i = 0; i < 12; i++) {
     boolean isPressed = (digitalRead(buttons[i].pin) == LOW);
-    if (isPressed) buttons[i].releaseTime = timeMilliseconds;
-    state = ((timeMilliseconds - buttons[i].releaseTime) > 50) ? false : true;
+    if (isPressed) buttons[i].releaseTime = timeMillis;
+    state = ((timeMillis - buttons[i].releaseTime) > 50) ? false : true;
     if (state && !buttons[i].oldState) buttons[i].isPressedTransition = true;
     buttons[i].oldState = state;
   }
+
+  // Shift switch
+  boolean isShiftPress = (digitalRead(PIN_SW_SHIFT) == LOW);
+  if (isShiftPress) shiftTimer = timeMillis;
+  shiftState = ((timeMillis - shiftTimer) > 50) ? false : true; 
+
+  // Ctrl switch
+  boolean isCtrlPressed = (digitalRead(PIN_SW_CTRL) == LOW);
+  if (isCtrlPressed) ctrlTimer = timeMillis;
+  ctrlState = ((timeMillis - ctrlTimer) > 50) ? false : true; 
+
+  // Mode switch
+  boolean ism26Pressed = (digitalRead(PIN_SW_2_6) == LOW);
+  if (ism26Pressed) m26Timer = timeMillis;
+  m26State = ((timeMillis - m26Timer) > 50) ? false : true; 
+  if (m26State && (!oldM26State)) isP2Mode = !isP2Mode;
+  oldM26State = m26State;
 }
 
 
 
-/*******************************************************************************
+/*****************************************************************************-
  * powerDown()
  ******************************************************************************/
 void powerDown() {
@@ -283,34 +267,36 @@ void powerDown() {
 
 
 void ledBlink() {
-  if (ledTrigger < timeMilliseconds) { // once/second
-    ledTrigger = timeMilliseconds + 500;
+  if (ledTrigger < timeMillis) { // once/second
+    ledTrigger = timeMillis + 500;
     digitalWrite(PIN_LED_BD, !digitalRead(PIN_LED_BD));
   }
 } // end ledBlink()
 
 
 
-/*******************************************************************************
+/*****************************************************************************-
  * checkConnected()  Set the "isConnected" states'
  ******************************************************************************/
 void checkConnected() {
-  if (timeMilliseconds < 600) return;
-  if ((msg2Time + 500) > timeMilliseconds) {
+  if (timeMillis < 600) return;
+  
+  if ((msg2Time + 500) > timeMillis) {
     is2Connected = true;
   } else {
     is2Connected = false;
-  } if ((msg6Time + 500) > timeMilliseconds) {
+  } 
+  
+  if ((msg6Time + 500) > timeMillis) {
     is6Connected = true;
-  }
-  else {
+  } else {
     is6Connected = false;
   }
 }
 
 
-/*******************************************************************************
- * interpret?State()  Set states from the "state" received from robot.
+/*****************************************************************************-
+ *  interpret?State()  Set states from the "state" received from robot.
  ******************************************************************************/
 void interpret2State(int state) {
   p2State = state;
@@ -329,12 +315,11 @@ void interpret6State(int state) {
 
 
 
-/*******************************************************************************
- * hasPressed()  Return true if button has pressed transition.
+/*****************************************************************************-
+ *  hasPressed()  Return true if button has pressed transition.
  ******************************************************************************/
 boolean hasPressed(int sw) {
   boolean ret = buttons[sw].isPressedTransition;
   if (ret) buttons[sw].isPressedTransition = false;
   return ret;
 }
-

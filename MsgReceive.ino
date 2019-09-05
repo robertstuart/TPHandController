@@ -55,6 +55,7 @@ void readXBee() {
  **************************************************************************/
 void interpretRcvDataFrame() {
   boolean isTwoPotatoe;
+
   switch (rcvDataFrame[0]) { // cmdID
     case 0x8A:           // Modem Status
       break;
@@ -94,8 +95,8 @@ void doRFData(boolean isTwoPotatoe) {
   int rfPtr = 12;
   char msgVal[100];
   int msgValPtr = 0;
-  if (isTwoPotatoe) msg2Time = timeMilliseconds;
-  else msg6Time = timeMilliseconds;
+  if (isTwoPotatoe) msg2Time = timeMillis;
+  else msg6Time = timeMillis;
   
   while (rfPtr < rcvDataFrameLength) {
     byte b = rcvDataFrame[rfPtr];
@@ -121,12 +122,9 @@ void doRFData(boolean isTwoPotatoe) {
 void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
   int intVal;
   float floatVal;
-  boolean booleanVal;
+
   msgStr[count] = 0;
-//Serial.print(cmd); 
-//Serial.print("\t");
-//Serial.println(msgStr);
-  
+
   switch (cmd) {
     case SEND_FPS:
       if (sscanf(msgStr, "%f", &floatVal) > 0) {
@@ -135,22 +133,24 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
       }
       break;
     case SEND_ROUTE_STEP:
-      if (sscanf(msgStr, "%d", &intVal) > 0) tpRouteStep = intVal;
+      if (sscanf(msgStr, "%d", &intVal) > 0) {
+        if (isTwoPotatoe) p2Step = intVal;
+        else p2Step = intVal;
+      }
       break;
     case SEND_MODE:
-      if (sscanf(msgStr, "%d", &intVal) > 0) tpMode = intVal;
+//      if (sscanf(msgStr, "%d", &intVal) > 0) tpMode = intVal;
       break;
     case SEND_BATT:
       if (sscanf(msgStr, "%f", &floatVal) > 0) {
-        if (isTwoPotatoe) p2Batt = floatVal;
-        else p6Batt = floatVal;
+        if (isTwoPotatoe) p2BattV = floatVal;
+        else p6BattV = floatVal;
       }
       break;
     case SEND_ROUTE_NAME:
     case SEND_MESSAGE:
       if (isTwoPotatoe) p2Message = String(msgStr);
-      else p3Message = String(msgStr);
-      Serial.println(msgStr);
+      else p6Message = String(msgStr);
       break;
     case SEND_STATE:
       if (sscanf(msgStr, "%d", &intVal) > 0) {
@@ -158,17 +158,17 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
         else interpret6State(intVal);
       }
       break;
-    case SEND_X:
-//      if (sscanf(msgStr, "%f", &floatVal) > 0) tpX = String(msgStr);
-      break;
-    case SEND_Y:
-//      if (sscanf(msgStr, "%f", &floatVal) > 0) tpY = String(msgStr);
-      break;
     case SEND_V1:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) v1 = floatVal;
+      if (sscanf(msgStr, "%f", &floatVal) > 0) {
+        if (isTwoPotatoe) p2V1 = floatVal;
+        else p6V1 = floatVal;
+      }
       break;
     case SEND_V2:
-      if (sscanf(msgStr, "%f", &floatVal) > 0) v2 = floatVal;
+      if (sscanf(msgStr, "%f", &floatVal) > 0) {
+        if (isTwoPotatoe) p2V2 = floatVal;
+        else p6V2 = floatVal;
+      }
       break;
     default:
       Serial.print("Illegal message received: "); Serial.println(cmd);
@@ -176,4 +176,3 @@ void doMsg(int cmd, char msgStr[], int count, boolean isTwoPotatoe) {
 
   }
 }
-

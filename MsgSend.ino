@@ -8,16 +8,16 @@ int dumpPtr, dumpEnd;
 int tickDumpPtr, tickDumpEnd;
 
 void send2Potatoe() {
-  queue2Msg(RCV_JOYX, 2, joyAX);
-  queue2Msg(RCV_JOYY, 2, joyAY);
+  queue2Msg(RCV_JOYX, 2, joyX);
+  queue2Msg(RCV_JOYY, 2, joyY);
   xTransmitRequest(rfData2, rfData2Ptr, true);
   rfData2Ptr = 0;
 }
 
 
 void send6Potatoe() {
-  queue6Msg(RCV_JOYX_I, (int) (joyBX * 100.0));
-  queue6Msg(RCV_JOYY_I, (int) (joyBY * 100.0));
+  queue6Msg(RCV_JOYX_I, (int) (joyX * 100.0));
+  queue6Msg(RCV_JOYY_I, (int) (joyY * 100.0));
   xTransmitRequest(rfData6, rfData6Ptr, false);
   rfData6Ptr = 0;
 }
@@ -95,13 +95,14 @@ void xTransmitRequest(byte rfFrame[], int rfLength, boolean is2Potatoe) {
   static byte txRequestDataFrame[100];
   static int frameId = 0;
   unsigned int sh, sl;
-  frameId = ++frameId % 200;   // ID cycles 1-200
+  frameId++;
+  frameId = frameId % 200;   // ID cycles 1-200
   if (is2Potatoe) {
     sh = XBEE_2P_SH;
     sl = XBEE_2P_SL;
   } else {
-    sh = XBEE_3P_SH;
-    sl = XBEE_3P_SL;
+    sh = XBEE_6P_SH;
+    sl = XBEE_6P_SL;
   }
   txRequestDataFrame[0] = 0x10;  // API identifier value
   txRequestDataFrame[1] = frameId + 1;
@@ -167,4 +168,3 @@ void xTransmitUartFrame(byte dataFrame[], int dataFrameLength) {
   }
   XBEE_SER.write(uartXmitFrame, oPtr);
 }
-
